@@ -1,0 +1,13 @@
+# 数据文件（不提交，避免覆盖线上数据）
+data/
+uploads/
+*.log
+
+# 系统文件
+.DS_Store
+Thumbs.db
+node_modules/
+
+# IDE
+.vscode/
+.idea/

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#ff5a5f">
+  <title>StarMeet-跨界交友 圈层升级</title>
+  <link rel="icon" type="image/png" id="favicon" href="/uploads/icons/favicon.png">
+  <link rel="apple-touch-icon" id="appleTouchIcon" href="/uploads/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="/style.css?v=6">
+</head>
+<body>
+  <div id="app">
+    <!-- 顶部导航 -->
+    <header class="topbar">
+      <div class="logo">
+        <span id="siteLogo">💕</span>
+        <span class="logo-text">
+          <span id="siteName">StarMeet</span>
+          <span class="site-slogan" id="siteSlogan">跨界交友</span>
+        </span>
+      </div>
+      <nav class="tabs" id="navTabs">
+        <a class="tab active" data-page="home">首页</a>
+        <a class="tab" data-page="match">找缘分</a>
+        <a class="tab" data-page="activity">活动</a>
+        <a class="tab" data-page="school">学堂</a>
+        <a class="tab" data-page="mine">我的</a>
+      </nav>
+      <div class="topbar-right">
+        <a id="loginBtn" class="link-btn" onclick="Auth.openLogin()">登录</a>
+      </div>
+    </header>
+
+    <!-- 滚动提示 -->
+    <div class="safety-tip">⚠️ 警惕酒托饭托婚托借约会骗取消费，平台资料仅作演示</div>
+
+    <!-- 主体内容 -->
+    <main class="content" id="content"></main>
+
+    <!-- 底部悬浮工具栏 -->
+    <nav class="bottombar">
+      <a class="btm-btn active" data-page="home"><i>🏠</i><span>首页</span></a>
+      <a class="btm-btn" data-page="match"><i>💖</i><span>找缘分</span></a>
+      <a class="btm-btn" data-page="activity"><i>🎉</i><span>活动</span></a>
+      <a class="btm-btn" data-page="school"><i>📚</i><span>学堂</span></a>
+      <a class="btm-btn" data-page="mine"><i>👤</i><span>我的</span></a>
+    </nav>
+  </div>
+
+  <!-- 登录注册弹窗 -->
+  <div class="modal" id="authModal" style="display:none">
+    <div class="modal-mask" onclick="Auth.close()"></div>
+    <div class="modal-card draggable-card" id="authCard">
+      <div class="modal-drag-handle" title="按住拖动"></div>
+      <div class="modal-title" id="authTitle">登录</div>
+      <div class="auth-tabs">
+        <a class="active" data-mode="login" onclick="Auth.switch('login')">登录</a>
+        <a data-mode="register" onclick="Auth.switch('register')">注册</a>
+      </div>
+
+      <!-- 登录：账号（仅登录时显示） -->
+      <div class="form-group login-only"><label>账号</label><input id="phone" type="text" placeholder="用户ID / 邮箱" autocomplete="username"></div>
+
+      <!-- 注册第1步：昵称 -->
+      <div class="form-group reg-only" style="display:none"><label>昵称</label><input id="nickname" type="text" placeholder="选一个好听的昵称（仅中英）" maxlength="16" oninput="Auth._filterNickname(this)"></div>
+
+      <!-- 注册第2步：性别 -->
+      <div class="form-group reg-only" style="display:none"><label>性别 <span style="color:var(--danger);">*</span></label><select id="gender" onchange="Auth._onGenderChange()"><option value="" disabled selected style="color:var(--text-3);">请选择性别</option><option value="女">女</option><option value="男">男</option></select></div>
+
+      <!-- 注册：微信号 -->
+      <div class="form-group reg-only" style="display:none"><label>微信号 <span style="color:var(--danger);">*</span></label><input id="reg_wechatId" type="text" placeholder="请输入微信号"></div>
+
+      <!-- 注册：星座 -->
+      <div class="form-group reg-only" style="display:none"><label>星座 <span style="color:var(--danger);">*</span></label><select id="reg_zodiac"><option value="" disabled selected>请选择星座</option><option>白羊座</option><option>金牛座</option><option>双子座</option><option>巨蟹座</option><option>狮子座</option><option>处女座</option><option>天秤座</option><option>天蝎座</option><option>射手座</option><option>摩羯座</option><option>水瓶座</option><option>双鱼座</option></select></div>
+
+      <!-- 注册：出生日期 -->
+      <div class="form-group reg-only" style="display:none"><label>出生日期 <span style="color:var(--danger);">*</span></label><input id="reg_birthday" type="date"></div>
+
+      <!-- 注册：血型 -->
+      <div class="form-group reg-only" style="display:none"><label>血型 <span style="color:var(--danger);">*</span></label><select id="reg_bloodType"><option value="" disabled selected>请选择血型</option><option>A型</option><option>B型</option><option>AB型</option><option>O型</option><option>其他</option></select></div>
+
+      <!-- 注册：体重 -->
+      <div class="form-group reg-only" style="display:none"><label>体重(KG) <span style="color:var(--danger);">*</span></label><input id="reg_weight" type="number" min="30" max="200" placeholder="请输入体重"></div>
+
+      <!-- 注册：房产（仅男生） -->
+      <div class="form-group reg-only male-only" style="display:none"><label>是否有房产 <span style="color:var(--danger);">*</span></label><select id="reg_hasHouse"><option value="" disabled selected>请选择</option><option>有(无贷款)</option><option>有(有贷款)</option><option>无</option><option>与父母同住</option></select></div>
+
+      <!-- 注册：车子（仅男生） -->
+      <div class="form-group reg-only male-only" style="display:none"><label>是否有车子 <span style="color:var(--danger);">*</span></label><select id="reg_hasCar"><option value="" disabled selected>请选择</option><option>有</option><option>无</option></select></div>
+
+      <!-- 注册第3步：邮箱 -->
+      <div class="form-group reg-only" style="display:none">
+        <label>邮箱</label>
+        <div class="email-row">
+          <input id="email" type="email" placeholder="请输入邮箱" maxlength="64" class="email-input">
+          <button type="button" id="sendCodeBtn" class="send-code-btn" onclick="Auth.sendCode()">发送验证码</button>
+        </div>
+      </div>
+
+      <!-- 注册第4步：验证码 -->
+      <div class="form-group reg-only" style="display:none">
+        <label>验证码</label>
+        <input id="code" type="text" placeholder="请输入邮箱收到的6位验证码" maxlength="6" inputmode="numeric">
+      </div>
+
+      <!-- 密码（登录和注册都要） -->
+      <div class="form-group password-group"><label>密码</label><input id="password" type="password" placeholder="请输入密码" autocomplete="current-password"><span class="pw-toggle" id="pwToggle" onclick="Auth.togglePassword()" title="显示/隐藏密码"></span></div>
+
+      <!-- 记住密码（仅登录显示） -->
+      <div class="form-group login-only" style="display:none;">
+        <label class="agreement-label">
+          <input type="checkbox" id="rememberPwd" checked> 记住密码
+        </label>
+      </div>
+
+      <!-- 注册第5步：头像（必传） -->
+      <div class="form-group reg-only" style="display:none">
+        <label>头像（必传）</label>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div id="avatarPreview" onclick="document.getElementById('avatarFile').click()" style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#ffb3b3,#ff8a3d);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;border:2px dashed var(--border);overflow:hidden;">+</div>
+          <div style="flex:1; font-size:12px; color:var(--text-3); line-height:1.6;">
+            <div>点击上方圆形选择头像图片</div>
+            <div>支持 JPG / PNG，&lt; 2MB</div>
+          </div>
+          <input type="file" id="avatarFile" accept="image/*" style="display:none">
+          <input type="hidden" id="avatarData" value="">
+        </div>
+      </div>
+
+      <!-- 注册第6步：协议 -->
+      <div class="form-group reg-only" style="display:none">
+        <label class="agreement-label">
+          <input type="checkbox" id="agree_user"> 我已阅读并同意 <a class="link" id="ag_user_open">《<span id="ag_user_text">用户服务协议</span>》</a>
+        </label>
+      </div>
+      <div class="form-group reg-only" style="display:none">
+        <label class="agreement-label">
+          <input type="checkbox" id="agree_vip"> 我已阅读并同意 <a class="link" id="ag_vip_open">《<span id="ag_vip_text">VIP会员服务协议</span>》</a>
+        </label>
+      </div>
+
+      <button class="primary-btn" onclick="Auth.submit()">确认</button>
+      <div class="modal-close" onclick="Auth.close()">×</div>
+    </div>
+  </div>
+
+  <!-- 协议弹窗 -->
+  <div class="modal" id="agreementModal" style="display:none; z-index:2000;">
+    <div class="modal-mask" onclick="Auth.closeAgreement()"></div>
+    <div class="modal-card" style="max-width:560px; width:92%; max-height:80vh; display:flex; flex-direction:column;">
+      <div class="modal-drag-handle" title="按住拖动"></div>
+      <div class="modal-title" id="agreementTitle">协议</div>
+      <div id="agreementContent" style="flex:1; overflow-y:auto; padding:16px 20px; white-space:pre-wrap; font-size:13px; line-height:1.7; color:#333; background:#fafafa; border-radius:8px; margin:8px 0;"></div>
+      <div style="display:flex; gap:8px; padding-top:8px;">
+        <button class="primary-btn" onclick="Auth.closeAgreement(true)" style="flex:1;">我已阅读</button>
+      </div>
+      <div class="modal-close" onclick="Auth.closeAgreement()">×</div>
+    </div>
+  </div>
+
+  <!-- 审核状态弹窗 -->
+  <div id="auditModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:9999;justify-content:center;align-items:center;">
+    <div style="background:#fff;border-radius:16px;padding:32px 24px 24px;text-align:center;max-width:300px;width:85%;">
+      <div style="font-size:48px;margin-bottom:12px;">✨</div>
+      <h3 id="auditTitle" style="margin:0 0 8px;font-size:18px;font-weight:600;color:#333;">就差一步就能开启交友啦！</h3>
+      <p id="auditDesc" style="margin:0 0 24px;font-size:14px;color:#888;line-height:1.6;"></p>
+      <button onclick="Pages.editProfile();document.getElementById('auditModal').style.display='none'" style="width:100%;padding:12px;border:none;border-radius:24px;background:var(--primary,#ff5a6e);color:#fff;font-size:16px;font-weight:500;cursor:pointer;">去完善资料</button>
+      <div onclick="document.getElementById('auditModal').style.display='none'" style="margin-top:12px;font-size:13px;color:#aaa;cursor:pointer;">稍后再说</div>
+    </div>
+  </div>
+
+  <!-- VIP升级引导弹窗 -->
+  <div id="vipUpgradeModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:9999;">
+    <div style="background:#fff;border-radius:16px;padding:28px 24px 20px;text-align:center;max-width:320px;width:85%;">
+      <div style="font-size:40px;margin-bottom:8px;">👑</div>
+      <h3 style="margin:0 0 8px;font-size:17px;font-weight:600;color:#333;">联系客服升级平台VIP</h3>
+      <p style="margin:0 0 16px;font-size:13px;color:#888;line-height:1.6;">解锁更多高级功能</p>
+      <div id="vipQrcodeBox" style="margin-bottom:12px;"></div>
+      <div id="vipWechatBox" style="margin-bottom:16px;font-size:14px;color:#333;">
+        客服微信号：<span id="vipWechatText" style="font-weight:600;color:var(--primary,#ff5a6e);"></span>
+        <span onclick="Pages._copyText(document.getElementById('vipWechatText').textContent,'微信号已复制')" style="margin-left:6px;color:var(--primary,#ff5a6e);font-size:12px;cursor:pointer;">复制</span>
+      </div>
+      <button onclick="document.getElementById('vipUpgradeModal').style.display='none'" style="width:100%;padding:11px;border:none;border-radius:24px;background:var(--primary,#ff5a6e);color:#fff;font-size:15px;font-weight:500;cursor:pointer;">知道了</button>
+    </div>
+  </div>
+
+  <!-- 通用Toast -->
+  <div id="toast" class="toast"></div>
+
+  <script src="/app.js?v=14"></script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>登录测试</title>
+</head>
+<body>
+  <h1>测试管理员登录</h1>
+  <button onclick="testLogin()">测试登录</button>
+  <div id="result"></div>
+
+  <script>
+    async function testLogin() {
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = '测试中...';
+
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: 'admin', password: 'admin888' })
+        });
+
+        const data = await res.json();
+        resultDiv.innerHTML = '<h3>响应结果：</h3>' +
+          '<p>状态码: ' + res.status + '</p>' +
+          '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+
+        if (data.code === 0) {
+          resultDiv.innerHTML += '<p style="color:green;">✅ 登录成功！Token: ' + data.data.token + '</p>';
+        } else {
+          resultDiv.innerHTML += '<p style="color:red;">❌ 登录失败：' + data.msg + '</p>';
+        }
+      } catch (e) {
+        resultDiv.innerHTML = '<p style="color:red;">❌ 请求失败：' + e.message + '</p>';
+      }
+    }
+  </script>
+</body>
+</html>
