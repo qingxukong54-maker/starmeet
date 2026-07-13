@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>问卷管理 - StarMeet Admin</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+    --primary:#4f46e5; --primary-light:#818cf8; --primary-bg:#eef2ff;
+    --success:#10b981; --warning:#f59e0b; --danger:#ef4444;
+    --gray-50:#f9fafb; --gray-100:#f3f4f6; --gray-200:#e5e7eb; --gray-300:#d1d5db;
+    --gray-400:#9ca3af; --gray-500:#6b7280; --gray-600:#4b5563; --gray-700:#374151;
+    --gray-800:#1f2937; --gray-900:#111827; --white:#ffffff; --shadow:0 1px 3px rgba(0,0,0,.1);
+}
+body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif; background:var(--gray-50); color:var(--gray-800); min-height:100vh; }
+
+/* 顶部导航 */
+.topbar { background:var(--white); border-bottom:1px solid var(--gray-200); padding:0 24px; height:56px; display:flex; align-items:center; justify-content:space-between; position:sticky;top:0;z-index:100;box-shadow:var(--shadow); }
+.topbar h1 { font-size:18px; font-weight:600; color:var(--gray-900); display:flex;align-items:center;gap:8px; }
+.topbar h1 .icon { font-size:24px; }
+.topbar-actions { display:flex; gap:12px; align-items:center; }
+
+.btn { display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:all .2s;text-decoration:none;line-height:1.5; }
+.btn-primary { background:var(--primary);color:var(--white); } .btn-primary:hover { background:#4338ca; }
+.btn-success { background:var(--success);color:var(--white); } .btn-success:hover { background:#059669; }
+.btn-outline { background:transparent;color:var(--primary);border:1px solid var(--primary-light); } .btn-outline:hover { background:var(--primary-bg); }
+.btn-danger { background:var(--danger);color:var(--white); } .btn-danger:hover { background:#dc2626; }
+.btn-sm { padding:5px 10px;font-size:13px; border-radius:6px; }
+.btn-ghost { background:transparent;color:var(--gray-600);padding:6px 10px; } .btn-ghost:hover { background:var(--gray-100);color:var(--gray-800); }
+
+/* 主布局 */
+.main { display:flex; max-width:1400px;margin:0 auto;padding:20px;gap:20px; }
+.sidebar { width:220px;flex-shrink:0; }
+.content { flex:1;min-width:0; }
+
+/* 侧边菜单 */
+.menu { background:var(--white);border-radius:12px;padding:16px 0;box-shadow:var(--shadow);position:sticky;top:76px; }
+.menu-item { display:block;padding:10px 20px;color:var(--gray-600);text-decoration:none;font-size:14px;display:flex;align-items:center;gap:10px;transition:all .15s; }
+.menu-item:hover { background:var(--gray-50);color:var(--gray-800); }
+.menu-item.active { background:var(--primary-bg);color:var(--primary);font-weight:600;border-right:3px solid var(--primary); }
+.menu-item .mi { font-size:18px;width:22px;text-align:center; }
+
+/* 工具栏 */
+.toolbar { display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px; }
+.toolbar-left { display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
+.toolbar-right { display:flex;align-items:center;gap:8px; }
+
+.search-box { position:relative; }
+.search-box input { padding:8px 14px 8px 36px;border:1px solid var(--gray-200);border-radius:8px;font-size:14px;width:240px;outline:none;transition:border-color .2s;background:var(--white); }
+.search-box input:focus { border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.1); }
+.search-box .search-icon { position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:14px;pointer-events:none; }
+
+.filter-select { padding:8px 30px 8px 12px;border:1px solid var(--gray-200);border-radius:8px;font-size:14px;outline:none;background:var(--white);cursor:pointer;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' stroke='%239ca3af' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center; }
+
+/* 卡片网格 */
+.survey-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px; }
+
+/* 问卷卡片 */
+.card { background:var(--white);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);transition:all .2s;border:1px solid var(--gray-100);position:relative; }
+.card:hover { box-shadow:0 4px 12px rgba(0,0,0,.1);transform:translateY(-2px); }
+.card-cover { height:120px;background:linear-gradient(135deg,var(--primary),#7c3aed);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden; }
+.card-cover::after { content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5 L55 25 H40 V55 H20 V25 H5 Z' fill='rgba(255,255,255,.08)'/%3E%3C/svg%3E") repeat;background-size:60px 60px;opacity:.5; }
+.card-type-badge { position:absolute;top:12px;left:12px;background:rgba(255,255,255,.2);backdrop-filter:blur(8px);color:var(--white);font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500; }
+.card-status { position:absolute;top:12px;right:12px;background:rgba(255,255,255,.2);backdrop-filter:blur(8px);color:var(--white);font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500; }
+.card-body { padding:16px; }
+.card-title { font-size:15px;font-weight:600;color:var(--gray-900);margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; }
+.card-meta { display:flex;align-items:center;gap:16px;font-size:12px;color:var(--gray-400);margin-bottom:12px; }
+.card-meta span { display:flex;align-items:center;gap:4px; }
+.card-stats { display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--gray-100); }
+.stat-item { text-align:center; }
+.stat-num { font-size:18px;font-weight:700;color:var(--gray-800); }
+.stat-label { font-size:11px;color:var(--gray-400);margin-top:2px; }
+.card-actions { display:flex;gap:6px;margin-top:12px; }
+.card-actions .btn { flex:1;justify-content:center;font-size:12px;padding:6px; }
+
+/* 状态标签颜色 */
+.status-draft { background:#fef3c7;color:#92400e; } .status-published { background:#d1fae5;color:#065f46; } .status-closed { background:#fee2e2;color:#991b1b; }
+.type-male { background:#dbeafe;color:#1e40af; } .type-female { background:#fce7f3;color:#9d174d; } .type-custom { background:#f3f4f6;color:#4b5563; }
+
+/* 空状态 */
+.empty-state { text-align:center;padding:80px 20px;color:var(--gray-400); }
+.empty-icon { font-size:64px;margin-bottom:16px;opacity:.4; }
+.empty-text { font-size:16px;margin-bottom:8px; }
+.empty-hint { font-size:13px; }
+
+/* 分页 */
+.pagination { display:flex;justify-content:center;align-items:center;gap:8px;margin-top:24px;padding:16px 0; }
+.page-btn { width:36px;height:36px;border-radius:8px;border:1px solid var(--gray-200);background:var(--white);font-size:14px;color:var(--gray-600);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center; }
+.page-btn:hover { border-color:var(--primary);color:var(--primary); } .page-btn.active { background:var(--primary);color:var(--white);border-color:var(--primary); }
+.page-btn:disabled { opacity:.4;cursor:not-allowed; }
+
+/* Modal 弹窗 */
+.modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:none;align-items:center;justify-content:center;animation:fadeIn .2s; }
+.modal-overlay.show { display:flex; }
+.modal { background:var(--white);border-radius:16px;width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:slideUp .25s; }
+.modal-header { padding:20px 24px;border-bottom:1px solid var(--gray-100);display:flex;justify-content:space-between;align-items:center; }
+.modal-header h3 { font-size:17px;font-weight:600; }
+.modal-close { width:32px;height:32px;border-radius:50%;border:none;background:var(--gray-100);cursor:pointer;font-size:18px;color:var(--gray-500);display:flex;align-items:center;justify-content:center; }
+.modal-close:hover { background:var(--gray-200);color:var(--gray-700); }
+.modal-body { padding:24px; }
+.form-group { margin-bottom:16px; }
+.form-label { display:block;font-size:13px;font-weight:500;color:var(--gray-700);margin-bottom:6px; }
+.form-input { width:100%;padding:10px 14px;border:1px solid var(--gray-200);border-radius:8px;font-size:14px;outline:none;transition:border-color .2s; }
+.form-input:focus { border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.1); }
+textarea.form-input { resize:vertical;min-height:80px; }
+.form-row { display:flex;gap:12px; } .form-row .form-group { flex:1; }
+
+.template-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px; }
+.template-card { border:2px solid var(--gray-200);border-radius:12px;padding:20px;cursor:pointer;transition:all .2s;text-align:center; }
+.template-card:hover { border-color:var(--primary);background:var(--primary-bg); }
+.template-card.selected { border-color:var(--primary);background:var(--primary-bg); }
+.template-icon { font-size:36px;margin-bottom:8px; }
+.template-name { font-size:14px;font-weight:600;color:var(--gray-800); }
+.template-desc { font-size:12px;color:var(--gray-400);margin-top:4px; }
+
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+@keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+/* Toast 提示 */
+.toast { position:fixed;top:20px;right:20px;background:var(--gray-800);color:var(--white);padding:12px 20px;border-radius:10px;font-size:14px;z-index:9999;animation:toastIn .3s;box-shadow:0 4px 20px rgba(0,0,0,.2); }
+.toast-success { background:var(--success); } .toast-error { background:var(--danger); }
+@keyframes toastIn { from{transform:translateX(100%)} to{transform:translateX(0)} }
+
+@media(max-width:768px) {
+    .main { flex-direction:column;padding:12px; }
+    .sidebar { width:100%;order:-1; } .menu { position:static;display:flex;overflow-x:auto;gap:4px;padding:8px; }
+    .menu-item { white-space:nowrap;border-radius:8px;flex-shrink:0;padding:8px 14px; }
+    .menu-item.active { border-right:none;border-bottom:3px solid var(--primary); }
+    .survey-grid { grid-template-columns:1fr; } .card-cover { height:100px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<div class="topbar">
+    <h1><span class="icon">📋</span> StarMeet 管理后台 <span style="font-size:12px;font-weight:400;color:var(--gray-400)">— 问卷管理</span></h1>
+    <div class="topbar-actions">
+        <button class="btn btn-outline" onclick="location.reload()">🔄 刷新</button>
+        <a href="/" class="btn btn-ghost">← 返回首页</a>
+    </div>
+</div>
+
+<!-- 主内容 -->
+<div class="main">
+    <!-- 侧边菜单 -->
+    <aside class="sidebar">
+        <nav class="menu">
+            <a class="menu-item active" href="#"><span class="mi">📊</span> 问卷列表</a>
+            <a class="menu-item" href="#" onclick="showCreateModal()"><span class="mi">➕</span> 新建问卷</a>
+            <a class="menu-item" href="#" id="navResults"><span class="mi">📈</span> 数据统计</a>
+            <a class="menu-item" href="/"><span class="mi">🏠</span> 后台首页</a>
+        </nav>
+    </aside>
+
+    <!-- 内容区 -->
+    <main class="content">
+        <!-- 工具栏 -->
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchInput" placeholder="搜索问卷标题..." onkeyup="if(event.key==='Enter')loadSurveys()">
+                </div>
+                <select class="filter-select" id="statusFilter" onchange="loadSurveys()">
+                    <option value="">全部状态</option>
+                    <option value="draft">草稿</option>
+                    <option value="published">已发布</option>
+                    <option value="closed">已关闭</option>
+                </select>
+                <select class="filter-select" id="typeFilter" onchange="loadSurveys()">
+                    <option value="">全部类型</option>
+                    <option value="male">男性客户</option>
+                    <option value="female">女性用户</option>
+                    <option value="custom">自定义</option>
+                </select>
+            </div>
+            <div class="toolbar-right">
+                <button class="btn btn-primary" onclick="showCreateModal()">+ 新建问卷</button>
+            </div>
+        </div>
+
+        <!-- 问卷卡片列表 -->
+        <div class="survey-grid" id="surveyList"></div>
+
+        <!-- 分页 -->
+        <div class="pagination" id="pagination"></div>
+    </main>
+</div>
+
+<!-- 新建问卷弹窗 -->
+<div class="modal-overlay" id="createModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>新建问卷</h3>
+            <button class="modal-close" onclick="hideCreateModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">问卷标题 *</label>
+                <input class="form-input" type="text" id="newTitle" placeholder="请输入问卷标题" maxlength="100">
+            </div>
+            <div class="form-group">
+                <label class="form-label">问卷描述</label>
+                <textarea class="form-input" id="newDesc" placeholder="简单描述这份问卷的用途（选填）"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">选择创建方式</label>
+                <div class="template-grid">
+                    <div class="template-card selected" data-mode="blank" onclick="selectTemplate(this,'blank')">
+                        <div class="template-icon">📝</div>
+                        <div class="template-name">空白问卷</div>
+                        <div class="template-desc">从零开始自定义</div>
+                    </div>
+                    <div class="template-card" data-mode="template" onclick="selectTemplate(this,'template')">
+                        <div class="template-icon">📚</div>
+                        <div class="template-name">使用模板</div>
+                        <div class="template-desc">预置男性/女性表单模板</div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group" id="templateSelectGroup" style="display:none">
+                <label class="form-label">选择模板</label>
+                <select class="form-input" id="templateType">
+                    <option value="male">👨 男性客户匹配申请表</option>
+                    <option value="female">👩 女性用户信息收集表</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px;" onclick="createSurvey()">创建问卷</button>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认弹窗 -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal" style="width:380px;">
+        <div class="modal-header">
+            <h3>确认删除</h3>
+            <button class="modal-close" onclick="hideDeleteModal()">✕</button>
+        </div>
+        <div class="modal-body" style="text-align:center;">
+            <p style="font-size:32px;margin-bottom:12px;">⚠️</p>
+            <p style="font-size:15px;color:var(--gray-700);margin-bottom:8px;">确定要删除此问卷吗？</p>
+            <p style="font-size:13px;color:var(--gray-400);margin-bottom:20px;">删除后数据不可恢复，提交记录也会一并清除。</p>
+            <div style="display:flex;gap:10px;">
+                <button class="btn btn-outline" style="flex:1;justify-content:center;" onclick="hideDeleteModal()">取消</button>
+                <button class="btn btn-danger" style="flex:1;justify-content:center;" id="confirmDeleteBtn">确认删除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== 全局变量 =====
+const API = '/api/surveys';
+let currentPage = 1;
+let pageSize = 12;
+let deleteTargetId = null;
+
+// ===== 页面加载 =====
+document.addEventListener('DOMContentLoaded', () => loadSurveys());
+
+// ===== Toast 提示 =====
+function showToast(msg, type='') {
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+}
+
+// ===== 加载问卷列表 =====
+async function loadSurveys() {
+    const params = new URLSearchParams({ page: currentPage, pageSize });
+    const keyword = document.getElementById('searchInput').value.trim();
+    const status = document.getElementById('statusFilter').value;
+    const type = document.getElementById('typeFilter').value;
+    if (keyword) params.set('keyword', keyword);
+    if (status) params.set('status', status);
+    if (type) params.set('type', type);
+
+    try {
+        const res = await fetch(`${API}?${params}`);
+        const json = await res.json();
+        if (json.code !== 0) throw new Error(json.message || '请求失败');
+
+        renderCards(json.data.list);
+        renderPagination(json.data.pagination);
+    } catch(e) {
+        console.error(e);
+        showToast('加载失败：'+e.message, 'error');
+    }
+}
+
+// ===== 渲染卡片 =====
+function renderCards(list) {
+    const container = document.getElementById('surveyList');
+    if (!list || list.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="grid-column:1/-1">
+                <div class="empty-icon">📭</div>
+                <div class="empty-text">暂无问卷</div>
+                <div class="empty-hint">点击右上角「新建问卷」开始创建</div>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = list.map(s => {
+        const statusMap = { draft:'草稿', published:'已发布', closed:'已关闭' };
+        const typeMap = { male:'男性客户', female:'女性用户', custom:'自定义' };
+        const timeStr = s.updated_at ? new Date(s.updated_at).toLocaleString('zh-CN') : '';
+
+        return `<div class="card">
+            <div class="card-cover">
+                <span class="card-type-badge type-${s.type}">${typeMap[s.type]||s.type}</span>
+                <span class="card-status status-${s.status}">${statusMap[s.status]||s.status}</span>
+            </div>
+            <div class="card-body">
+                <div class="card-title">${escHtml(s.title)}</div>
+                <div class="card-meta">
+                    <span>🕐 ${timeStr}</span>
+                    <span>📝 ${s.submit_count||0} 份提交</span>
+                </div>
+                <div class="card-stats">
+                    <div class="stat-item"><div class="stat-num">${s.view_count||0}</div><div class="stat-label">浏览量</div></div>
+                    <div class="stat-item"><div class="stat-num">${s.submit_count||0}</div><div class="stat-label">提交量</div></div>
+                </div>
+                <div class="card-actions">
+                    ${s.status==='draft'
+                        ?`<button class="btn btn-primary btn-sm" onclick="editSurvey(${s.id})">✏️ 编辑题目</button>`
+                        :`<button class="btn btn-outline btn-sm" onclick="editSurvey(${s.id})">👁️ 查看编辑</button>`
+                    }
+                    ${s.status!=='published'?`<button class="btn btn-success btn-sm" onclick="publishSurvey(${s.id})">🚀 发布</button>`:`<button class="btn btn-sm" style="background:var(--gray-100)" onclick="closeSurvey(${s.id})">⏹ 关闭</button>`}
+                    <button class="btn btn-outline btn-sm" onclick="viewStats(${s.id},'${escAttr(s.title)}')">📈 数据</button>
+                    <button class="btn btn-ghost btn-sm" onclick="copySurvey(${s.id})">📋 复制</button>
+                    <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="showDeleteModal(${s.id})">🗑️</button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ===== 分页 =====
+function renderPagination(p) {
+    if (!p || p.totalPages <= 1) { document.getElementById('pagination').innerHTML=''; return; }
+    let html = '';
+    html += `<button class="page-btn" ${p.page<=1?'disabled':''} onclick="goPage(${p.page-1})">&lt;</button>`;
+    for(let i=Math.max(1,p.page-2);i<=Math.min(p.totalPages,p.page+2);i++) {
+        html += `<button class="page-btn ${i===p.page?'active':''}" onclick="goPage(${i})">${i}</button>`;
+    }
+    html += `<button class="page-btn" ${p.page>=p.totalPages?'disabled':''} onclick="goPage(${p.page+1})">&gt;</button>`;
+    html += `<span style="font-size:13px;color:var(--gray-400);margin-left:8px;">共 ${p.total} 条</span>`;
+    document.getElementById('pagination').innerHTML = html;
+}
+
+function goPage(p) { currentPage=p; loadSurveys(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+// ===== 新建问卷 =====
+function showCreateModal() { document.getElementById('createModal').classList.add('show'); }
+function hideCreateModal() { document.getElementById('createModal').classList.remove('show'); }
+let createMode = 'blank';
+
+function selectTemplate(el, mode) {
+    createMode = mode;
+    document.querySelectorAll('.template-card').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('templateSelectGroup').style.display = mode === 'template' ? 'block' : 'none';
+}
+
+async function createSurvey() {
+    const title = document.getElementById('newTitle').value.trim();
+    if (!title) return showToast('请输入问卷标题','error');
+    hideCreateModal();
+
+    try {
+        let res, json;
+        if (createMode === 'template') {
+            const tType = document.getElementById('templateType').value;
+            res = await fetch(`/api/surveys/templates/${tType}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({title})});
+        } else {
+            res = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({ title, description:document.getElementById('newDesc').value.trim() })});
+        }
+        json = await res.json();
+        if (json.code !== 0) throw new Error(json.message);
+
+        showToast('创建成功！');
+        setTimeout(() => editSurvey(json.data.id), 500);
+    } catch(e) { showToast('创建失败：'+e.message,'error'); }
+}
+
+// ===== 编辑问卷（跳转到编辑器）=====
+function editSurvey(id) {
+    location.href = `/admin/survey_edit.html?id=${id}`;
+}
+
+// ===== 发布/关闭/复制/删除 =====
+async function publishSurvey(id) {
+    try {
+        const res = await fetch(`${API}/${id}/status`, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'published'})});
+        const j=await res.json();
+        if(j.code===0){showToast('发布成功！');loadSurveys();} else throw new Error(j.message);
+    }catch(e){showToast('操作失败：'+e.message,'error')}
+}
+
+async function closeSurvey(id) {
+    try {
+        const res = await fetch(`${API}/${id}/status`, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'closed'})});
+        const j=await res.json();
+        if(j.code===0){showToast('已关闭');loadSurveys();}else throw new Error(j.message);
+    }catch(e){showToast('操作失败：'+e.message,'error')}
+}
+
+async function copySurvey(id) {
+    try {
+        const res = await fetch(`${API}/${id}/copy`,{method:'POST'});
+        const j=await res.json();
+        if(j.code===0){showToast('复制成功！');loadSurveys();}else throw new Error(j.message);
+    }catch(e){showToast('复制失败：'+e.message,'error')}
+}
+
+function showDeleteModal(id){ deleteTargetId=id; document.getElementById('deleteModal').classList.add('show'); }
+function hideDeleteModal(){ deleteTargetId=null; document.getElementById('deleteModal').classList.remove('show'); }
+
+document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+    if(!deleteTargetId) return;
+    try{
+        const res = await fetch(`${API}/${deleteTargetId}`,{method:'DELETE'});
+        const j=await res.json();
+        if(j.code===0){hideDeleteModal();showToast('已删除');loadSurveys();}else throw new Error(j.message);
+    }catch(e){showToast('删除失败：'+e.message,'error')}
+});
+
+// ===== 数据统计跳转 =====
+function viewStats(id,title){ location.href=`/admin/survey_results.html?id=${id}&title=${encodeURIComponent(title)}`; }
+
+// ===== 工具函数 =====
+function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function escAttr(s){return s.replace(/"/g,'&quot;').replace(/'/g,"&#39;");}
+</script>
+
+</body>
+</html>

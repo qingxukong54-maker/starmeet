@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>问卷管理 - SM婚恋系统</title>
+  <link rel="stylesheet" href="/admin/admin.css">
+  <link rel="stylesheet" href="/admin/survey.css">
+  <style>
+    /* 页面内联补充样式 */
+    .page-inner { padding: 24px; }
+    .filter-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+    .filter-tabs .tab-btn {
+      padding: 6px 16px; border: 1px solid #e8e8e8; background: #fff;
+      border-radius: 4px; font-size: 13px; cursor: pointer; transition: all .15s;
+    }
+    .filter-tabs .tab-btn.active { background: #1890ff; color: #fff; border-color: #1890ff; }
+    .filter-tabs .tab-btn:hover:not(.active) { border-color: #1890ff; color: #1890ff; }
+  </style>
+</head>
+<body style="background: #f0f2f5; min-height: 100vh;">
+
+  <div id="surveyManagerPage">
+    <!-- 顶部操作栏 -->
+    <div class="survey-topbar">
+      <h2 id="pageMainTitle">📋 问卷管理</h2>
+      <div class="actions">
+        <input type="text" class="search-input" id="surveySearchInput" placeholder="搜索问卷标题..." onkeyup="if(event.key==='Enter')loadSurveyList()">
+        <button class="btn-survey btn-survey-primary" onclick="showSurveyEditor()">＋ 新建问卷</button>
+        <button class="btn-survey btn-survey-success" onclick="exportSelectedSurveys()">📥 导出勾选</button>
+      </div>
+    </div>
+
+    <!-- 筛选标签 -->
+    <div class="filter-tabs" id="statusTabs">
+      <button class="tab-btn active" onclick="filterByStatus('all', this)">全部</button>
+      <button class="tab-btn" onclick="filterByStatus('active', this)">已发布</button>
+      <button class="tab-btn" onclick="filterByStatus('draft', this)">草稿</button>
+      <button class="tab-btn" onclick="filterByStatus('closed', this)">已关闭</button>
+    </div>
+
+    <!-- 问卷卡片列表 -->
+    <div class="survey-card-list" id="surveyCardList">
+      <div class="survey-empty">
+        <div class="empty-icon">📋</div>
+        <p>暂无问卷，点击上方「新建问卷」开始创建</p>
+      </div>
+    </div>
+
+    <!-- 分页 -->
+    <div class="survey-pagination" id="surveyPagination"></div>
+  </div>
+
+  <!-- 问卷编辑器弹窗 -->
+  <div id="surveyEditorModal" class="modal" style="display:none;">
+    <div class="modal-mask" onclick="closeSurveyEditor()"></div>
+    <div class="modal-card" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-title" id="editorTitle">新建问卷</div>
+      <div class="modal-close" onclick="closeSurveyEditor()">×</div>
+
+      <!-- 基本信息 -->
+      <div style="padding: 20px 0;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+          <div>
+            <label style="display:block; font-size:13px; color:#595959; margin-bottom:4px;">问卷标题 <span style="color:#ff4d4f;">*</span></label>
+            <input type="text" id="svTitle" placeholder="如：恋爱偏好调查" style="width:100%; padding:8px 12px; border:1px solid #e8e8e8; border-radius:6px; font-size:14px;">
+          </div>
+          <div>
+            <label style="display:block; font-size:13px; color:#595959; margin-bottom:4px;">问卷类型</label>
+            <select id="svType" onchange="toggleSurveyType()" style="width:100%; padding:8px 12px; border:1px solid #e8e8e8; border-radius:6px; font-size:14px;">
+              <option value="normal">普通型（感谢语）</option>
+              <option value="interpretation">解读型（显示结果）</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display:block; font-size:13px; color:#595959; margin-bottom:4px;">问卷描述</label>
+          <textarea id="svDesc" rows="2" placeholder="简单介绍问卷目的描述..." style="width:100%; padding:8px 12px; border:1px solid #e8e8e8; border-radius:6px; font-size:14px; resize:vertical;"></textarea>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+          <div>
+            <label style="display:block; font-size:13px; color:#595959; margin-bottom:4px;">状态</label>
+            <select id="svStatus" style="width:100%; padding:8px 12px; border:1px solid #e8e8e8; border-radius:6px; font-size:14px;">
+              <option value="draft">草稿</option>
+              <option value="active">已发布</option>
+              <option value="closed">已关闭</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block; font-size:13px; color:#595959; margin-bottom:4px;">封面图</label>
+            <input type="file" id="svCoverFile" accept="image/*" onchange="uploadSurveyCover(this)" style="font-size:13px;">
+            <input type="hidden" id="svCover" value="">
+            <div id="coverPreview" style="margin-top:6px;"></div>
+          </div>
+        </div>
+
+        <div id="svThankYouBox">
+          <label style="display:block; font-size:13px; color:#595959; margin-bottom:4px;">感谢文案（普通型提交后显示）</label>
+          <input type="text" id="svThankYou" placeholder="感谢填写，我们会根据具体情况为您提供服务。" style="width:100%; padding:8px 12px; border:1px solid #e8e8e8; border-radius:6px; font-size:14px;">
+        </div>
+        <div id="svInterpretationBox" style="display:none;">
+          <label style="display:block; font-size:13px; color:#595959; margin-bottom:4px;">解读内容（解读型提交后显示）</label>
+          <textarea id="svInterpretation" rows="3" placeholder="根据您的选择，我们建议..." style="width:100%; padding:8px 12px; border:1px solid #e8e8e8; border-radius:6px; font-size:14px; resize:vertical;"></textarea>
+        </div>
+      </div>
+
+      <!-- 题目列表 -->
+      <div style="border-top: 1px solid #f0f0f0; padding-top: 16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+          <h4 style="font-size:15px; font-weight:600; color:#262626; margin:0;">题目列表</h4>
+          <button class="btn-survey btn-survey-primary" onclick="showQuestionEditor()">＋ 添加题目</button>
+        </div>
+        <div class="question-list" id="questionList">
+          <div class="survey-empty" style="padding:30px 0;">
+            <div class="empty-icon">📝</div>
+            <p>暂无题目，点击「添加题目」开始编辑</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部操作 -->
+      <div style="display:flex; justify-content:flex-end; gap:10px; padding-top: 20px; border-top: 1px solid #f0f0f0; margin-top: 20px;">
+        <button class="btn-survey btn-survey-default" onclick="closeSurveyEditor()">取消</button>
+        <button class="btn-survey btn-survey-primary" onclick="saveSurvey()" style="min-width:120px;">💾 保存问卷</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 题目编辑弹窗 -->
+  <div id="questionEditorModal" class="modal" style="display:none;">
+    <div class="modal-mask" onclick="closeQuestionEditor()"></div>
+    <div class="modal-card question-edit-modal" style="max-width: 560px;">
+      <div class="modal-title">添加题目</div>
+      <div class="modal-close" onclick="closeQuestionEditor()">×</div>
+
+      <div class="form-line">
+        <label>题目内容 <span style="color:#ff4d4f;">*</span></label>
+        <input type="text" id="qText" placeholder="请输入题目标题" style="width:100%; padding:8px 12px; border:1px solid #e8e8e8; border-radius:6px; font-size:14px;">
+      </div>
+
+      <div class="form-line">
+        <label>题目类型</label>
+        <select id="qType" onchange="toggleQuestionOptions()" style="width:100%; padding:8px 12px; border:1px solid #e8e8e8; border-radius:6px; font-size:14px;">
+          <option value="single">单选题</option>
+          <option value="multi">多选题</option>
+          <option value="text">单行文本</option>
+          <option value="textarea">多行文本</option>
+          <option value="number">数字</option>
+          <option value="date">日期</option>
+          <option value="image">图片上传</option>
+          <option value="rating">评分</option>
+        </select>
+      </div>
+
+      <div id="qOptionsBox">
+        <label style="display:block; font-size:13px; color:#595959; margin-bottom:6px;">选项列表</label>
+        <div class="option-list" id="optionList">
+          <div class="option-item">
+            <input type="text" value="" placeholder="选项内容" style="flex:1; padding:6px 10px; border:1px solid #e8e8e8; border-radius:4px; font-size:13px;">
+            <button class="btn-remove-option" onclick="removeOption(this)">×</button>
+          </div>
+        </div>
+        <button class="btn-survey btn-survey-default" onclick="addOption()" style="margin-top:8px; font-size:12px;">＋ 添加选项</button>
+      </div>
+
+      <div style="margin-top: 12px;">
+        <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#595959; cursor:pointer;">
+          <input type="checkbox" id="qRequired"> 必填
+        </label>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 20px;">
+        <button class="btn-survey btn-survey-default" onclick="closeQuestionEditor()">取消</button>
+        <button class="btn-survey btn-survey-primary" onclick="saveQuestion()">确认添加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 统计弹窗 -->
+  <div id="statsModal" class="modal" style="display:none;">
+    <div class="modal-mask" onclick="closeStatsModal()"></div>
+    <div class="modal-card" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-title" id="statsTitle">问卷统计</div>
+      <div class="modal-close" onclick="closeStatsModal()">×</div>
+      <div id="statsContent"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // ===== 全局变量 =====
+    let allSurveys = [];
+    let currentFilter = 'all';
+    let editingSurveyId = null;
+    let editingQuestionIndex = -1; // -1=新增, >=0=编辑
+
+    // ===== 加载问卷列表 =====
+    async function loadSurveyList() {
+      try {
+        const r = await Admin.api('/api/admin/surveys');
+        if (r.code !== 0) { showToast(r.msg); return; }
+        allSurveys = r.data || [];
+        renderSurveyCards();
+      } catch(e) {
+        showToast('加载失败，请检查网络');
+      }
+    }
+
+    // ===== 渲染问卷卡片 =====
+    function renderSurveyCards() {
+      const list = document.getElementById('surveyCardList');
+      let filtered = allSurveys;
+      if (currentFilter !== 'all') {
+        filtered = filtered.filter(s => s.status === currentFilter);
+      }
+      const keyword = document.getElementById('surveySearchInput').value.trim().toLowerCase();
+      if (keyword) {
+        filtered = filtered.filter(s => (s.title || '').toLowerCase().includes(keyword));
+      }
+
+      if (!filtered.length) {
+        list.innerHTML = '<div class="survey-empty"><div class="empty-icon">📋</div><p>暂无问卷</p></div>';
+        return;
+      }
+
+      list.innerHTML = filtered.map((s, i) => {
+        const statusMap = { active: ['已发布', 'active'], draft: ['草稿', 'draft'], closed: ['已关闭', 'closed'] };
+        const [statusText, statusClass] = statusMap[s.status] || ['未知', ''];
+        const qCount = (s.questions || []).length;
+        const respCount = s._count || 0;
+        return `
+          <div class="survey-card" onclick="editSurvey('${s.id}')">
+            <div class="card-header">
+              <div class="card-title">${escHtml(s.title || '（无标题）')}</div>
+              <span class="card-status ${statusClass}">${statusText}</span>
+            </div>
+            ${s.description ? `<div class="card-desc">${escHtml(s.description)}</div>` : ''}
+            <div class="card-meta">
+              <span>📝 ${qCount} 题</span>
+              <span>📊 ${respCount} 次填写</span>
+              <span>🕐 ${formatTime(s.updatedAt || s.createdAt)}</span>
+            </div>
+            <div class="card-actions" onclick="event.stopPropagation()">
+              <button class="btn-view" onclick="viewSurveyStats('${s.id}')">📊 统计</button>
+              <button class="btn-edit" onclick="editSurvey('${s.id}')">✏️ 编辑</button>
+              <button class="btn-delete" onclick="deleteSurvey('${s.id}')">🗑️ 删除</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ===== 筛选 =====
+    function filterByStatus(status, btn) {
+      currentFilter = status;
+      document.querySelectorAll('#statusTabs .tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderSurveyCards();
+    }
+
+    // ===== 显示编辑器 =====
+    function showSurveyEditor(surveyId) {
+      editingSurveyId = surveyId || null;
+      editingQuestionIndex = -1;
+      document.getElementById('editorTitle').textContent = surveyId ? '编辑问卷' : '新建问卷';
+      // 重置表单
+      document.getElementById('svTitle').value = '';
+      document.getElementById('svDesc').value = '';
+      document.getElementById('svType').value = 'normal';
+      document.getElementById('svStatus').value = 'draft';
+      document.getElementById('svThankYou').value = '感谢填写，我们会根据具体情况为您提供服务。';
+      document.getElementById('svInterpretation').value = '';
+      document.getElementById('svCover').value = '';
+      document.getElementById('coverPreview').innerHTML = '';
+      document.getElementById('questionList').innerHTML = '<div class="survey-empty" style="padding:30px 0;"><div class="empty-icon">📝</div><p>暂无题目</p></div>';
+
+      if (surveyId) {
+        // 加载已有数据
+        const s = allSurveys.find(x => x.id === surveyId);
+        if (s) {
+          document.getElementById('svTitle').value = s.title || '';
+          document.getElementById('svDesc').value = s.description || '';
+          document.getElementById('svType').value = s.type || 'normal';
+          document.getElementById('svStatus').value = s.status || 'draft';
+          document.getElementById('svThankYou').value = s.thankYouMessage || '';
+          document.getElementById('svInterpretation').value = s.interpretation || '';
+          document.getElementById('svCover').value = s.cover || '';
+          if (s.cover) {
+            document.getElementById('coverPreview').innerHTML = `<img src="${escHtml(s.cover)}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;">`;
+          }
+          toggleSurveyType();
+          renderQuestionList(s.questions || []);
+        }
+      } else {
+        toggleSurveyType();
+      }
+
+      document.getElementById('surveyEditorModal').style.display = 'flex';
+    }
+
+    // ===== 渲染题目列表 =====
+    function renderQuestionList(questions) {
+      const container = document.getElementById('questionList');
+      if (!questions || !questions.length) {
+        container.innerHTML = '<div class="survey-empty" style="padding:30px 0;"><div class="empty-icon">📝</div><p>暂无题目</p></div>';
+        return;
+      }
+      container.innerHTML = questions.map((q, i) => {
+        const typeMap = { single: '单选', multi: '多选', text: '单行文本', textarea: '多行文本', number: '数字', date: '日期', image: '图片', rating: '评分' };
+        return `
+          <div class="question-item">
+            <div class="q-sort">☰</div>
+            <div class="q-content">
+              <div class="q-title">${i+1}. ${escHtml(q.text || '（无标题）')} ${q.required ? '<span style="color:#ff4d4f;">*</span>' : ''}</div>
+              <div class="q-type">${typeMap[q.type] || q.type}</div>
+            </div>
+            <div class="q-actions">
+              <button onclick="editQuestion(${i})">✏️</button>
+              <button onclick="removeQuestion(${i})">🗑️</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ===== 题目编辑 =====
+    function showQuestionEditor(editIdx) {
+      editingQuestionIndex = editIdx >= 0 ? editIdx : -1;
+      document.querySelector('#questionEditorModal .modal-title').textContent = editIdx >= 0 ? '编辑题目' : '添加题目';
+      if (editIdx >= 0) {
+        // 加载已有题目数据
+        const s = allSurveys.find(x => x.id === editingSurveyId);
+        const q = s && s.questions ? s.questions[editIdx] : null;
+        if (q) {
+          document.getElementById('qText').value = q.text || '';
+          document.getElementById('qType').value = q.type || 'single';
+          document.getElementById('qRequired').checked = !!q.required;
+          toggleQuestionOptions();
+          // 渲染选项
+          if (q.options && q.options.length) {
+            const optList = document.getElementById('optionList');
+            optList.innerHTML = q.options.map(opt => `
+              <div class="option-item">
+                <input type="text" value="${escAttr(opt)}" placeholder="选项内容" style="flex:1; padding:6px 10px; border:1px solid #e8e8e8; border-radius:4px; font-size:13px;">
+                <button class="btn-remove-option" onclick="removeOption(this)">×</button>
+              </div>
+            `).join('');
+          }
+        }
+      } else {
+        document.getElementById('qText').value = '';
+        document.getElementById('qType').value = 'single';
+        document.getElementById('qRequired').checked = false;
+        toggleQuestionOptions();
+        document.getElementById('optionList').innerHTML = `
+          <div class="option-item">
+            <input type="text" value="" placeholder="选项内容" style="flex:1; padding:6px 10px; border:1px solid #e8e8e8; border-radius:4px; font-size:13px;">
+            <button class="btn-remove-option" onclick="removeOption(this)">×</button>
+          </div>
+        `;
+      }
+      document.getElementById('questionEditorModal').style.display = 'flex';
+    }
+
+    function toggleQuestionOptions() {
+      const type = document.getElementById('qType').value;
+      const box = document.getElementById('qOptionsBox');
+      box.style.display = (type === 'single' || type === 'multi') ? 'block' : 'none';
+    }
+
+    function addOption() {
+      const optList = document.getElementById('optionList');
+      const div = document.createElement('div');
+      div.className = 'option-item';
+      div.innerHTML = `
+        <input type="text" value="" placeholder="选项内容" style="flex:1; padding:6px 10px; border:1px solid #e8e8e8; border-radius:4px; font-size:13px;">
+        <button class="btn-remove-option" onclick="removeOption(this)">×</button>
+      `;
+      optList.appendChild(div);
+    }
+
+    function removeOption(btn) {
+      btn.parentElement.remove();
+    }
+
+    function saveQuestion() {
+      const text = document.getElementById('qText').value.trim();
+      if (!text) { showToast('请输入题目内容'); return; }
+      const type = document.getElementById('qType').value;
+      const required = document.getElementById('qRequired').checked;
+      let options = [];
+      if (type === 'single' || type === 'multi') {
+        const inputs = document.querySelectorAll('#optionList input');
+        options = Array.from(inputs).map(inp => inp.value.trim()).filter(v => v);
+        if (!options.length) { showToast('请至少添加一个选项'); return; }
+      }
+
+      const question = { id: 'q_' + Date.now(), text, type, required, options };
+
+      // 保存到临时数组（实际保存时一起提交）
+      // 这里先存到 window 临时变量
+      if (!window._tempQuestions) window._tempQuestions = [];
+      if (editingQuestionIndex >= 0) {
+        window._tempQuestions[editingQuestionIndex] = question;
+      } else {
+        window._tempQuestions.push(question);
+      }
+
+      renderQuestionList(window._tempQuestions);
+      closeQuestionEditor();
+      showToast('题目已添加（保存问卷后生效）');
+    }
+
+    function editQuestion(idx) {
+      window._tempQuestions = window._tempQuestions || [];
+      showQuestionEditor(idx);
+    }
+
+    function removeQuestion(idx) {
+      if (!confirm('确定删除此题？')) return;
+      window._tempQuestions.splice(idx, 1);
+      renderQuestionList(window._tempQuestions);
+    }
+
+    // ===== 切换问卷类型 =====
+    function toggleSurveyType() {
+      const type = document.getElementById('svType').value;
+      document.getElementById('svThankYouBox').style.display = type === 'normal' ? 'block' : 'none';
+      document.getElementById('svInterpretationBox').style.display = type === 'interpretation' ? 'block' : 'none';
+    }
+
+    // ===== 保存问卷 =====
+    async function saveSurvey() {
+      const title = document.getElementById('svTitle').value.trim();
+      if (!title) { showToast('请输入问卷标题'); return; }
+      const body = {
+        id: editingSurveyId,
+        title,
+        description: document.getElementById('svDesc').value.trim(),
+        type: document.getElementById('svType').value,
+        status: document.getElementById('svStatus').value,
+        thankYouMessage: document.getElementById('svThankYou').value.trim(),
+        interpretation: document.getElementById('svInterpretation').value.trim(),
+        cover: document.getElementById('svCover').value,
+        questions: window._tempQuestions || [],
+      };
+      try {
+        const r = await Admin.api('/api/admin/survey/save', { method: 'POST', body });
+        if (r.code === 0) {
+          showToast('保存成功');
+          closeSurveyEditor();
+          loadSurveyList();
+        } else {
+          showToast(r.msg);
+        }
+      } catch(e) {
+        showToast('保存失败，请检查网络');
+      }
+    }
+
+    // ===== 编辑问卷 =====
+    async function editSurvey(surveyId) {
+      try {
+        const r = await Admin.api('/api/admin/surveys');
+        const s = (r.data || []).find(x => x.id === surveyId);
+        if (!s) { showToast('问卷不存在'); return; }
+        window._tempQuestions = s.questions || [];
+        showSurveyEditor(surveyId);
+      } catch(e) {
+        showToast('加载失败');
+      }
+    }
+
+    // ===== 删除问卷 =====
+    async function deleteSurvey(surveyId) {
+      if (!confirm('确定删除该问卷？所有填写数据也会丢失！')) return;
+      try {
+        const r = await Admin.api('/api/admin/survey/delete', { method: 'POST', body: { id: surveyId } });
+        if (r.code === 0) {
+          showToast('删除成功');
+          loadSurveyList();
+        } else {
+          showToast(r.msg);
+        }
+      } catch(e) {
+        showToast('删除失败');
+      }
+    }
+
+    // ===== 查看统计 =====
+    async function viewSurveyStats(surveyId) {
+      try {
+        const r = await Admin.api('/api/admin/survey/stats?surveyId=' + surveyId);
+        if (r.code !== 0) { showToast(r.msg); return; }
+        const { survey, responses, stats } = r.data;
+        const content = document.getElementById('statsContent');
+        document.getElementById('statsTitle').textContent = `统计：${survey.title}`;
+
+        let html = '<div class="stats-overview">';
+        html += `<div class="stat-box blue"><div class="stat-label">浏览量</div><div class="stat-value">${survey.viewCount || 0}</div></div>`;
+        html += `<div class="stat-box green"><div class="stat-label">提交量</div><div class="stat-value">${responses.length}</div></div>`;
+        html += `<div class="stat-box orange"><div class="stat-label">完成率</div><div class="stat-value">${survey.viewCount ? Math.round(responses.length/survey.viewCount*100) : 0}%</div></div>`;
+        html += `<div class="stat-box red"><div class="stat-label">平均时长</div><div class="stat-value">--</div></div>`;
+        html += '</div>';
+
+        // 题目统计
+        if (stats && stats.length) {
+          html += '<div class="chart-container"><h4>题目统计</h4>';
+          stats.forEach(st => {
+            html += `<div style="margin-bottom:20px;"><div style="font-weight:600; margin-bottom:8px;">${escHtml(st.questionText)}</div>`;
+            if (st.type === 'single' || st.type === 'multi') {
+              html += '<div style="display:flex; flex-direction:column; gap:4px;">';
+              (st.options || []).forEach(opt => {
+                const pct = st.total > 0 ? Math.round(opt.count / st.total * 100) : 0;
+                html += `<div style="display:flex; align-items:center; gap:8px; font-size:13px;">
+                  <span style="min-width:80px;">${escHtml(opt.option)}</span>
+                  <div style="flex:1; height:20px; background:#f0f0f0; border-radius:3px; overflow:hidden;">
+                    <div style="height:100%; background:#1890ff; width:${pct}%; transition:width .3s;"></div>
+                  </div>
+                  <span style="min-width:40px; text-align:right; color:#8c8c8c;">${opt.count} (${pct}%)</span>
+                </div>`;
+              });
+              html += '</div>';
+            }
+            html += '</div>';
+          });
+          html += '</div>';
+        }
+
+        content.innerHTML = html;
+        document.getElementById('statsModal').style.display = 'flex';
+      } catch(e) {
+        showToast('加载统计失败');
+      }
+    }
+
+    function closeStatsModal() {
+      document.getElementById('statsModal').style.display = 'none';
+    }
+
+    // ===== 导出 =====
+    async function exportSelectedSurveys() {
+      const ids = allSurveys.map(s => s.id); // 简化：导出全部
+      if (!ids.length) { showToast('没有可导出的问卷'); return; }
+      try {
+        const res = await fetch('/api/admin/survey/export', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('zeai_admin_token') },
+          body: JSON.stringify({ surveyIds: ids })
+        });
+        if (res.ok) {
+          const blob = await res.blob();
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `问卷结果_${new Date().toLocaleDateString('zh-CN')}.xlsx`;
+          a.click();
+        } else {
+          showToast('导出失败');
+        }
+      } catch(e) {
+        showToast('导出失败');
+      }
+    }
+
+    // ===== 上传封面 =====
+    async function uploadSurveyCover(input) {
+      if (!input.files.length) return;
+      const formData = new FormData();
+      formData.append('file', input.files[0]);
+      try {
+        const r = await Admin.api('/api/upload', { method: 'POST', body: formData });
+        if (r.code === 0) {
+          document.getElementById('svCover').value = r.data.url;
+          document.getElementById('coverPreview').innerHTML = `<img src="${r.data.url}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;">`;
+          showToast('上传成功');
+        }
+      } catch(e) {
+        showToast('上传失败');
+      }
+    }
+
+    // ===== 关闭编辑器 =====
+    function closeSurveyEditor() {
+      document.getElementById('surveyEditorModal').style.display = 'none';
+      window._tempQuestions = [];
+    }
+
+    function closeQuestionEditor() {
+      document.getElementById('questionEditorModal').style.display = 'none';
+    }
+
+    // ===== 工具函数 =====
+    function escHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function escAttr(str) {
+      return String(str).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    }
+    function formatTime(iso) {
+      if (!iso) return '';
+      try { return new Date(iso).toLocaleDateString('zh-CN'); } catch(e) { return ''; }
+    }
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2000);
+    }
+
+    // ===== 初始化 =====
+    loadSurveyList();
+  </script>
+</body>
+</html>

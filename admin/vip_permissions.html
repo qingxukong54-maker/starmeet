@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VIP权限配置 - SM婚恋系统</title>
+  <link rel="stylesheet" href="/admin/admin.css?v=39">
+  <style>
+    .perm-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .perm-table th { background: #f5f5f5; padding: 12px 16px; text-align: left; font-size: 14px; color: #333; font-weight: 600; border-bottom: 2px solid #e0e0e0; }
+    .perm-table td { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #666; }
+    .perm-table tr:hover { background: #fafafa; }
+    .perm-table .icon { font-size: 18px; margin-right: 8px; }
+    .perm-table .desc { font-size: 12px; color: #999; margin-top: 4px; }
+    .check-cell { text-align: center; }
+    .check-cell input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+    .level-label { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+    .level-normal { background: #f5f5f5; color: #666; }
+    .level-vip { background: #fff3e0; color: #f57c00; }
+    .level-svip { background: #fce4ec; color: #c2185b; }
+    .daily-limit { display: flex; align-items: center; gap: 8px; }
+    .daily-limit input { width: 60px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+    .daily-limit span { font-size: 12px; color: #999; }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <!-- 侧边栏 -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo" onclick="location.href='/admin/'">
+        <span class="logo-icon">💕</span>
+        <span>SM婚恋系统</span>
+      </div>
+      <nav class="nav" id="nav">
+        <a href="#" class="nav-item" data-page="dashboard" onclick="Admin.switchPage('dashboard')">
+          <span class="nav-icon">📊</span> 仪表盘
+        </a>
+        <a href="#" class="nav-item" data-page="users" onclick="Admin.switchPage('users')">
+          <span class="nav-icon">👥</span> 用户管理
+        </a>
+        <a href="#" class="nav-item" data-page="ads" onclick="Admin.switchPage('ads')">
+          <span class="nav-icon">📣</span> 广告管理
+        </a>
+        <a href="#" class="nav-item" data-page="config" onclick="Admin.switchPage('config')">
+          <span class="nav-icon">⚙️</span> 系统设置
+        </a>
+        <a href="#" class="nav-item" data-page="survey" onclick="Admin.switchPage('survey')">
+          <span class="nav-icon">📋</span> 问卷管理
+        </a>
+        <a href="#" class="nav-item active" data-page="vip" onclick="Admin.switchPage('vip')">
+          <span class="nav-icon">👑</span> VIP管理
+        </a>
+      </nav>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main">
+      <header class="header">
+        <button class="menu-btn" onclick="Admin.toggleSidebar()">☰</button>
+        <h1 class="header-title" id="pageTitle">VIP权限配置</h1>
+        <div class="header-actions">
+          <button class="btn btn-primary btn-sm" onclick="VipPerm.save()">保存配置</button>
+        </div>
+      </header>
+
+      <div class="content">
+        <div style="background:#fff3e0;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;color:#e65100;">
+          💡 勾选对应等级下方的复选框，即可开启该等级用户的权限。每天聊天条数限制可在下方单独设置。
+        </div>
+
+        <table class="perm-table" id="permTable">
+          <thead>
+            <tr>
+              <th style="width:40px;">#</th>
+              <th>权限名称</th>
+              <th>权限描述</th>
+              <th style="text-align:center;">普通用户</th>
+              <th style="text-align:center;">VIP</th>
+              <th style="text-align:center;">SVIP</th>
+              <th style="text-align:center;">每日限制</th>
+            </tr>
+          </thead>
+          <tbody id="permBody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script src="/admin/admin.js?v=39"></script>
+  <script>
+    const VipPerm = {
+      _permissions: null,
+
+      async init() {
+        await this.load();
+      },
+
+      async load() {
+        const res = await Admin.api('/api/vip/permissions', { method: 'GET' });
+        if (res.code === 0) {
+          this._permissions = res.data.permissions || [];
+          this.render();
+        }
+      },
+
+      render() {
+        const tbody = document.getElementById('permBody');
+        tbody.innerHTML = this._permissions.map((p, i) => `
+          <tr>
+            <td style="color:#999;">${i + 1}</td>
+            <td>
+              <span class="icon">${p.icon || '🔹'}</span>
+              <strong>${p.name}</strong>
+            </td>
+            <td>
+              ${p.desc || ''}
+            </td>
+            <td class="check-cell">
+              <input type="checkbox" ${p.normal ? 'checked' : ''} onchange="VipPerm.update('${p.id}', 'normal', this.checked)">
+            </td>
+            <td class="check-cell">
+              <input type="checkbox" ${p.vip ? 'checked' : ''} onchange="VipPerm.update('${p.id}', 'vip', this.checked)">
+            </td>
+            <td class="check-cell">
+              <input type="checkbox" ${p.svip ? 'checked' : ''} onchange="VipPerm.update('${p.id}', 'svip', this.checked)">
+            </td>
+            <td>
+              ${p.daily_limit ? `
+                <div class="daily-limit">
+                  <label>普通：</label>
+                  <input type="number" value="${p.daily_limit.normal || 0}" onchange="VipPerm.updateLimit('${p.id}', 'normal', parseInt(this.value))">
+                  <label>VIP：</label>
+                  <input type="number" value="${p.daily_limit.vip || 0}" onchange="VipPerm.updateLimit('${p.id}', 'vip', parseInt(this.value))">
+                  <label>SVIP：</label>
+                  <input type="number" value="${p.daily_limit.svip === -1 ? '无限' : p.daily_limit.svip}" onchange="VipPerm.updateLimit('${p.id}', 'svip', this.value === '无限' ? -1 : parseInt(this.value))">
+                </div>
+              ` : '<span style="color:#999;font-size:12px;">无限制</span>'}
+            </td>
+          </tr>
+        `).join('');
+      },
+
+      update(id, level, value) {
+        const p = this._permissions.find(x => x.id === id);
+        if (p) {
+          p[level] = value;
+        }
+      },
+
+      updateLimit(id, level, value) {
+        const p = this._permissions.find(x => x.id === id);
+        if (p && p.daily_limit) {
+          p.daily_limit[level] = value;
+        }
+      },
+
+      async save() {
+        const res = await Admin.api('/api/vip/permissions/save', {
+          method: 'POST',
+          body: { permissions: this._permissions }
+        });
+        if (res.code === 0) {
+          Admin.toast('权限配置保存成功');
+        } else {
+          Admin.toast(res.msg || '保存失败');
+        }
+      }
+    };
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      VipPerm.init();
+    });
+  </script>
+</body>
+</html>

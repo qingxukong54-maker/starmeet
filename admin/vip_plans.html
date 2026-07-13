@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VIP套餐管理 - SM婚恋系统</title>
+  <link rel="stylesheet" href="/admin/admin.css?v=39">
+  <style>
+    .plan-list { display: flex; flex-direction: column; gap: 16px; }
+    .plan-card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .plan-card h3 { margin: 0 0 12px; font-size: 16px; color: #333; display: flex; align-items: center; gap: 10px; }
+    .plan-card h3 .badge { font-size: 12px; padding: 2px 8px; border-radius: 10px; }
+    .badge-vip { background: #fff3e0; color: #f57c00; }
+    .badge-svip { background: #fce4ec; color: #c2185b; }
+    .plan-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .plan-form .full { grid-column: 1 / -1; }
+    .plan-form label { font-size: 13px; color: #666; margin-bottom: 4px; display: block; }
+    .plan-form input, .plan-form select { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+    .plan-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .features-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .feature-tag { background: #f5f5f5; padding: 4px 10px; border-radius: 12px; font-size: 12px; color: #666; }
+    .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; border-radius: 24px; transition: .3s; }
+    .switch .slider:before { content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .3s; }
+    .switch input:checked + .slider { background: var(--primary); }
+    .switch input:checked + .slider:before { transform: translateX(20px); }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <!-- 侧边栏 -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo" onclick="location.href='/admin/'">
+        <span class="logo-icon">💕</span>
+        <span>SM婚恋系统</span>
+      </div>
+      <nav class="nav" id="nav">
+        <a href="#" class="nav-item" data-page="dashboard" onclick="Admin.switchPage('dashboard')">
+          <span class="nav-icon">📊</span> 仪表盘
+        </a>
+        <a href="#" class="nav-item" data-page="users" onclick="Admin.switchPage('users')">
+          <span class="nav-icon">👥</span> 用户管理
+        </a>
+        <a href="#" class="nav-item" data-page="ads" onclick="Admin.switchPage('ads')">
+          <span class="nav-icon">📣</span> 广告管理
+        </a>
+        <a href="#" class="nav-item" data-page="config" onclick="Admin.switchPage('config')">
+          <span class="nav-icon">⚙️</span> 系统设置
+        </a>
+        <a href="#" class="nav-item" data-page="survey" onclick="Admin.switchPage('survey')">
+          <span class="nav-icon">📋</span> 问卷管理
+        </a>
+        <a href="#" class="nav-item active" data-page="vip" onclick="Admin.switchPage('vip')">
+          <span class="nav-icon">👑</span> VIP管理
+        </a>
+      </nav>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main">
+      <header class="header">
+        <button class="menu-btn" onclick="Admin.toggleSidebar()">☰</button>
+        <h1 class="header-title" id="pageTitle">VIP套餐管理</h1>
+        <div class="header-actions">
+          <button class="btn btn-primary btn-sm" onclick="VipPlan.addPlan()">+ 添加套餐</button>
+        </div>
+      </header>
+
+      <div class="content">
+        <!-- VIP套餐列表 -->
+        <div class="plan-list" id="planList"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/admin/admin.js?v=39"></script>
+  <script>
+    const VipPlan = {
+      async init() {
+        await this.loadPlans();
+      },
+
+      async loadPlans() {
+        const res = await Admin.api('/api/vip/plans', { method: 'GET' });
+        if (res.code === 0) {
+          this.renderPlans(res.data);
+        }
+      },
+
+      renderPlans(plans) {
+        const list = document.getElementById('planList');
+        if (!plans || !plans.length) {
+          list.innerHTML = '<div class="empty">暂无VIP套餐，点击上方按钮添加</div>';
+          return;
+        }
+
+        list.innerHTML = plans.map(p => `
+          <div class="plan-card">
+            <h3>
+              ${p.type === 'svip' ? '👑' : '⭐'} ${p.name}
+              <span class="badge ${p.type === 'svip' ? 'badge-svip' : 'badge-vip'}">${p.type.toUpperCase()}</span>
+              <label class="switch" style="margin-left:auto;">
+                <input type="checkbox" ${p.enabled ? 'checked' : ''} onchange="VipPlan.toggleEnabled('${p.id}', this.checked)">
+                <span class="slider"></span>
+              </label>
+            </h3>
+            <div class="plan-form">
+              <div>
+                <label>套餐ID</label>
+                <input type="text" value="${p.id}" disabled>
+              </div>
+              <div>
+                <label>套餐名称</label>
+                <input type="text" id="name_${p.id}" value="${p.name}">
+              </div>
+              <div>
+                <label>套餐类型</label>
+                <select id="type_${p.id}">
+                  <option value="vip" ${p.type === 'vip' ? 'selected' : ''}>VIP</option>
+                  <option value="svip" ${p.type === 'svip' ? 'selected' : ''}>SVIP</option>
+                </select>
+              </div>
+              <div>
+                <label>有效期（天）</label>
+                <input type="number" id="days_${p.id}" value="${p.days}">
+              </div>
+              <div>
+                <label>价格（元）</label>
+                <input type="number" id="price_${p.id}" value="${p.price}" step="0.01">
+              </div>
+              <div>
+                <label>等级（数字）</label>
+                <input type="number" id="level_${p.id}" value="${p.level}">
+              </div>
+              <div class="full">
+                <label>套餐描述</label>
+                <input type="text" id="desc_${p.id}" value="${p.desc || ''}" placeholder="简短描述该套餐的卖点">
+              </div>
+              <div class="full">
+                <label>专属特权（每行一个）</label>
+                <textarea id="features_${p.id}" rows="3" style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;">${(p.features || []).join('\n')}</textarea>
+              </div>
+            </div>
+            <div class="plan-actions">
+              <button class="btn btn-primary btn-sm" onclick="VipPlan.savePlan('${p.id}')">保存</button>
+              <button class="btn btn-danger btn-sm" onclick="VipPlan.deletePlan('${p.id}')">删除</button>
+            </div>
+          </div>
+        `).join('');
+      },
+
+      addPlan() {
+        const id = 'vip_' + Date.now();
+        this.renderPlans([
+          ...(this._plans || []),
+          { id, name: '新套餐', type: 'vip', days: 90, price: 99, level: 1, enabled: true, features: [] }
+        ]);
+      },
+
+      async savePlan(id) {
+        const plan = {
+          id,
+          name: document.getElementById('name_' + id).value,
+          type: document.getElementById('type_' + id).value,
+          days: parseInt(document.getElementById('days_' + id).value),
+          price: parseFloat(document.getElementById('price_' + id).value),
+          level: parseInt(document.getElementById('level_' + id).value),
+          desc: document.getElementById('desc_' + id).value,
+          features: document.getElementById('features_' + id).value.split('\n').filter(x => x.trim()),
+          enabled: true
+        };
+
+        const res = await Admin.api('/api/vip/plans/save', { method: 'POST', body: { plans: this._plans } });
+        if (res.code === 0) {
+          Admin.toast('保存成功');
+          this.loadPlans();
+        } else {
+          Admin.toast(res.msg || '保存失败');
+        }
+      },
+
+      async deletePlan(id) {
+        if (!confirm('确定删除该套餐？')) return;
+        const plans = (this._plans || []).filter(p => p.id !== id);
+        const res = await Admin.api('/api/vip/plans/save', { method: 'POST', body: { plans } });
+        if (res.code === 0) {
+          Admin.toast('删除成功');
+          this.loadPlans();
+        }
+      },
+
+      async toggleEnabled(id, enabled) {
+        const plan = (this._plans || []).find(p => p.id === id);
+        if (plan) {
+          plan.enabled = enabled;
+          await this.savePlan(id);
+        }
+      }
+    };
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      VipPlan.init();
+    });
+  </script>
+</body>
+</html>

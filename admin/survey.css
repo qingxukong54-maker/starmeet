@@ -1,0 +1,489 @@
+/* ============================================================
+   SM婚恋系统 - 问卷管理专属样式（问卷星风格）
+   主色：#1890ff  辅色：#52c41a / #faad14
+   ============================================================ */
+
+/* === 问卷管理主容器 === */
+#surveyManagerPage {
+  padding: 0;
+  background: transparent;
+}
+
+/* === 顶部操作栏 === */
+.survey-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: #fff;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.survey-topbar h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #262626;
+  margin: 0;
+}
+.survey-topbar .actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.survey-topbar .search-input {
+  padding: 8px 14px;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  font-size: 13px;
+  width: 220px;
+  transition: border-color 0.2s;
+}
+.survey-topbar .search-input:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 3px rgba(24,144,255,0.1);
+}
+
+/* === 按钮（问卷星风格） === */
+.btn-survey {
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+.btn-survey-primary {
+  background: #1890ff;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(24,144,255,0.25);
+}
+.btn-survey-primary:hover { background: #40a9ff; }
+.btn-survey-success {
+  background: #52c41a;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(82,196,26,0.25);
+}
+.btn-survey-success:hover { background: #73d13d; }
+.btn-survey-default {
+  background: #fff;
+  color: #595959;
+  border-color: #d9d9d9;
+}
+.btn-survey-default:hover { border-color: #1890ff; color: #1890ff; }
+.btn-survey-danger {
+  background: #fff;
+  color: #ff4d4f;
+  border-color: #ffa39e;
+}
+.btn-survey-danger:hover { background: #fff1f0; }
+
+/* === 问卷卡片列表（问卷星风格） === */
+.survey-card-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+.survey-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  transition: all 0.2s;
+  cursor: pointer;
+  border: 1px solid #f0f0f0;
+  position: relative;
+  overflow: hidden;
+}
+.survey-card:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+  border-color: #1890ff;
+}
+.survey-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.survey-card .card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+  line-height: 1.4;
+  flex: 1;
+  margin-right: 12px;
+}
+.survey-card .card-status {
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.survey-card .card-status.active {
+  background: #f6ffed;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+.survey-card .card-status.draft {
+  background: #fff7e6;
+  color: #fa8c16;
+  border: 1px solid #ffd591;
+}
+.survey-card .card-status.closed {
+  background: #fff1f0;
+  color: #ff4d4f;
+  border: 1px solid #ffa39e;
+}
+.survey-card .card-desc {
+  font-size: 13px;
+  color: #8c8c8c;
+  margin-bottom: 16px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.survey-card .card-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: #bfbfbf;
+  margin-bottom: 16px;
+}
+.survey-card .card-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.survey-card .card-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid #f5f5f5;
+}
+.survey-card .card-actions button {
+  flex: 1;
+  padding: 6px 0;
+  border: none;
+  background: none;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+.survey-card .card-actions .btn-view { color: #1890ff; }
+.survey-card .card-actions .btn-view:hover { background: #e6f7ff; }
+.survey-card .card-actions .btn-edit { color: #fa8c16; }
+.survey-card .card-actions .btn-edit:hover { background: #fff7e6; }
+.survey-card .card-actions .btn-stats { color: #52c41a; }
+.survey-card .card-actions .btn-stats:hover { background: #f6ffed; }
+.survey-card .card-actions .btn-delete { color: #ff4d4f; }
+.survey-card .card-actions .btn-delete:hover { background: #fff1f0; }
+
+/* === 问卷编辑器 === */
+.survey-editor {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+.survey-editor .editor-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.survey-editor .editor-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+  margin: 0;
+}
+.survey-editor .editor-body {
+  padding: 24px;
+}
+.survey-editor .editor-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: #fafbfc;
+}
+
+/* === 题目列表 === */
+.question-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+.question-item {
+  background: #fafbfc;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: all 0.15s;
+  cursor: grab;
+}
+.question-item:hover {
+  border-color: #1890ff;
+  background: #f0f7ff;
+}
+.question-item .q-sort {
+  color: #bfbfbf;
+  font-size: 14px;
+  cursor: grab;
+  user-select: none;
+  padding-top: 2px;
+}
+.question-item .q-content {
+  flex: 1;
+}
+.question-item .q-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #262626;
+  margin-bottom: 6px;
+}
+.question-item .q-type {
+  font-size: 12px;
+  color: #8c8c8c;
+  background: #f0f0f0;
+  padding: 2px 8px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.question-item .q-actions {
+  display: flex;
+  gap: 6px;
+}
+.question-item .q-actions button {
+  padding: 4px 10px;
+  border: 1px solid #d9d9d9;
+  background: #fff;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.question-item .q-actions button:hover {
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+/* === 题目编辑弹窗 === */
+.question-edit-modal .modal-card {
+  max-width: 600px;
+}
+.question-edit-modal .form-line {
+  margin-bottom: 16px;
+}
+.question-edit-modal .form-line label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #595959;
+  margin-bottom: 6px;
+}
+.question-edit-modal .form-line input,
+.question-edit-modal .form-line textarea,
+.question-edit-modal .form-line select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+.question-edit-modal .form-line input:focus,
+.question-edit-modal .form-line textarea:focus,
+.question-edit-modal .form-line select:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 3px rgba(24,144,255,0.1);
+  outline: none;
+}
+.question-edit-modal .option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.question-edit-modal .option-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.question-edit-modal .option-item input {
+  flex: 1;
+}
+.question-edit-modal .option-item .btn-remove-option {
+  padding: 4px 8px;
+  border: none;
+  background: none;
+  color: #ff4d4f;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* === 数据统计页面 === */
+.stats-overview {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.stats-overview .stat-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  position: relative;
+  overflow: hidden;
+}
+.stats-overview .stat-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+}
+.stats-overview .stat-box.blue::before { background: #1890ff; }
+.stats-overview .stat-box.green::before { background: #52c41a; }
+.stats-overview .stat-box.orange::before { background: #faad14; }
+.stats-overview .stat-box.red::before { background: #ff4d4f; }
+.stats-overview .stat-box .stat-label {
+  font-size: 13px;
+  color: #8c8c8c;
+  margin-bottom: 8px;
+}
+.stats-overview .stat-box .stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #262626;
+}
+.stats-overview .stat-box .stat-trend {
+  font-size: 12px;
+  color: #bfbfbf;
+  margin-top: 4px;
+}
+
+/* === 图表容器 === */
+.chart-container {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  margin-bottom: 16px;
+}
+.chart-container h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* === 数据表格 === */
+.data-table-wrapper {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.data-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  color: #595959;
+  background: #fafbfc;
+  border-bottom: 1px solid #e8e8e8;
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f5f5f5;
+  font-size: 13px;
+  color: #595959;
+}
+.data-table tr:hover td {
+  background: #f5f9ff;
+}
+
+/* === 空状态 === */
+.survey-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #bfbfbf;
+}
+.survey-empty .empty-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+.survey-empty p {
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+/* === 分页 === */
+.survey-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 0 0 12px 12px;
+}
+.survey-pagination button {
+  padding: 6px 12px;
+  border: 1px solid #d9d9d9;
+  background: #fff;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.survey-pagination button:hover {
+  border-color: #1890ff;
+  color: #1890ff;
+}
+.survey-pagination button.active {
+  background: #1890ff;
+  color: #fff;
+  border-color: #1890ff;
+}
+.survey-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* === 响应式 === */
+@media (max-width: 768px) {
+  .survey-card-list {
+    grid-template-columns: 1fr;
+  }
+  .stats-overview {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .survey-topbar {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+}

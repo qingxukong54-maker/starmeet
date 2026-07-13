@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据统计 - StarMeet Admin</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+    --primary:#4f46e5;--primary-light:#818cf8;--primary-bg:#eef2ff;
+    --success:#10b981;--warning:#f59e0b;--danger:#ef4444;
+    --gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;--gray-300:#d1d5db;
+    --gray-400:#9ca3af;--gray-500:#6b7280;--gray-600:#4b5563;--gray-700:#374151;
+    --gray-800:#1f2937;--white:#fff
+}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--gray-50);color:var(--gray-800)}
+
+/* 顶栏 */
+.topbar{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.back-btn{text-decoration:none;color:var(--gray-600);font-size:14px;display:flex;align-items:center;gap:4px}
+.back-btn:hover{color:var(--primary)}
+.topbar-title{font-size:16px;font-weight:600}
+.topbar-right{display:flex;align-items:center;gap:8px}
+
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;text-decoration:none;line-height:1.4;transition:all .15s}
+.btn-primary{background:var(--primary);color:var(--white)}.btn-primary:hover{background:#4338ca}
+.btn-success{background:var(--success);color:var(--white)}.btn-outline{border:1px solid var(--gray-300);background:var(--white);color:var(--gray-700)}
+.btn-sm{padding:5px 11px;font-size:12px;border-radius:6px}.btn-ghost{background:transparent;color:var(--gray-500)}
+
+.main{max-width:1200px;margin:0 auto;padding:20px}
+
+/* 统计卡片 */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:var(--white);border-radius:12px;padding:20px;border:1px solid var(--gray-100)}
+.stat-icon{font-size:28px;margin-bottom:8px}
+.stat-num{font-size:28px;font-weight:700;color:var(--gray-900)}
+.stat-label{font-size:12px;color:var(--gray-400);margin-top:2px}
+
+/* Tab 切换 */
+.tabs{display:flex;gap:2px;background:var(--white);border-radius:10px;padding:4px;margin-bottom:16px;border:1px solid var(--gray-200)}
+.tab-btn{flex:1;padding:9px 16px;border:none;background:transparent;border-radius:8px;font-size:14px;font-weight:500;color:var(--gray-500);cursor:pointer;transition:all .15s;text-align:center}
+.tab-btn:hover{color:var(--gray-800);background:var(--gray-50)}
+.tab-btn.active{background:var(--primary);color:var(--white)}
+
+/* 数据表格 */
+.table-wrap{background:var(--white);border-radius:12px;border:1px solid var(--gray-100);overflow:hidden}
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{background:var(--gray-50);padding:12px 14px;text-align:left;font-weight:600;color:var(--gray-600);font-size:12px;white-space:nowrap;border-bottom:1px solid var(--gray-200)}
+.data-table td{padding:11px 14px;border-bottom:1px solid var(--gray-100);vertical-align:top;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.data-table tr:hover td{background:var(--gray-50)}
+.data-table .name-cell{font-weight:500;color:var(--primary)}
+
+/* 图表区 */
+.chart-section{background:var(--white);border-radius:12px;padding:20px;margin-bottom:16px;border:1px solid var(--gray-100)}
+.chart-title{font-size:15px;font-weight:600;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.chart-container{display:flex;gap:16px;flex-wrap:wrap}
+.chart-item{flex:1;min-width:250px}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:160px;padding:0 10px 30px 40px;position:relative;border-bottom:2px solid var(--gray-200)}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;min-width:20px;cursor:pointer;transition:transform .15s}
+.bar-col:hover{transform:scaleY(1.05)}
+.bar-fill{width:100%;border-radius:4px 4px 0 0;transition:height .3s;min-height:4px}
+.bar-label{position:absolute;bottom:-26px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--gray-500);white-space:nowrap}
+.bar-value{font-size:11px;font-weight:600;color:var(--gray-600);margin-top:4px}
+.bar-axis{position:absolute;left:0;top:0;bottom:30px;width:35px;display:flex;flex-direction:column;justify-content:space-between;font-size:10px;color:var(--gray-300)}
+
+/* 详情弹窗 */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:none;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--white);border-radius:16px;width:680px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-header{padding:18px 22px;border-bottom:1px solid var(--gray-100);display:flex;justify-content:space-between;align-items:center}
+.modal-header h3{font-size:17px;font-weight:600}
+.modal-close{width:32px;height:32px;border-radius:50%;border:none;background:var(--gray-100);cursor:pointer;font-size:18px;color:var(--gray-500)}
+.modal-body{padding:22px}
+.detail-row{display:flex;padding:12px 0;border-bottom:1px solid var(--gray-100)}
+.detail-q{width:180px;flex-shrink:0;font-size:13px;font-weight:500;color:var(--gray-700)}
+.detail-a{flex:1;font-size:13px;color:var(--gray-800);word-break:break-all}
+.toast{position:fixed;top:16px;right:16px;background:var(--gray-800);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;animation:toastIn .25s}
+.toast-success{background:var(--success)}.toast-error{background:var(--danger)}
+@keyframes toastIn{from{transform:translateX(40px)}to{transform:translateX(0)}}
+.empty-state{text-align:center;padding:60px;color:var(--gray-300)}
+@media(max-width:768px){.stats-grid{grid-template-columns:repeat(2,1fr)}.chart-container{flex-direction:column}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+    <div class="topbar-left">
+        <a class="back-btn" href="/admin/survey_list.html">← 返回问卷列表</a>
+        <span class="topbar-title" id="pageTitle">数据统计</span>
+    </div>
+    <div class="topbar-right">
+        <button class="btn btn-success btn-sm" onclick="exportData()">📥 导出 CSV</button>
+        <button class="btn btn-outline btn-sm" onclick="exportData('json')">📥 导出 JSON</button>
+    </div>
+</div>
+
+<div class="main">
+    <!-- 统计概览 -->
+    <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-icon">👁️</div><div class="stat-num" id="stView">-</div><div class="stat-label">总浏览量</div></div>
+        <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-num" id="stSubmit">-</div><div class="stat-label">总提交数</div></div>
+        <div class="stat-card"><div class="stat-icon">⏱️</div><div class="stat-num" id="stAvgTime">-</div><div class="stat-label">平均填写时长</div></div>
+        <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-num" id="stRate">-</div><div class="stat-label">完成率</div></div>
+    </div>
+
+    <!-- Tab 切换 -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('responses',this)">📋 提交记录</button>
+        <button class="tab-btn" onclick="switchTab('charts',this)">📈 图表分析</button>
+    </div>
+
+    <!-- 提交记录 -->
+    <div id="tabResponses">
+        <div class="table-wrap">
+            <table class="data-table" id="responseTable">
+                <thead><tr><th>#</th><th>提交人</th><th>提交时间</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody id="responseBody"></tbody>
+            </table>
+        </div>
+        <div style="text-align:center;padding:16px" id="respPagination"></div>
+    </div>
+
+    <!-- 图表分析 -->
+    <div id="tabCharts" style="display:none">
+        <div id="chartArea"></div>
+    </div>
+</div>
+
+<!-- 详情弹窗 -->
+<div class="modal-overlay" id="detailModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>提交详情</h3>
+            <button class="modal-close" onclick="hideDetail()">✕</button>
+        </div>
+        <div class="modal-body" id="detailBody"></div>
+    </div>
+</div>
+
+<script>
+let surveyId = new URLSearchParams(location.search).get('id');
+const API = `/api/surveys/${surveyId}`;
+let currentTab = 'responses';
+let respPage = 1;
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('pageTitle').textContent = decodeURIComponent(new URLSearchParams(location.search).get('title')||'') + ' - 数据统计';
+    loadStats();
+    loadResponses();
+});
+
+async function loadStats() {
+    try {
+        const res = await fetch(`${API}/stats`);
+        const j = await res.json();
+        if(j.code===0){
+            const s=j.data||{};
+            document.getElementById('stView').textContent=s.view_count||0;
+            document.getElementById('stSubmit').textContent=s.submit_count||0;
+            const avg = s.avg_duration?Math.round(s.avg_duration):'-';
+            document.getElementById('stAvgTime').textContent = typeof avg==='number'?avg+'秒':avg;
+            const rate = s.view_count>0?Math.round((s.submit_count||0)/s.view_count*100):0;
+            document.getElementById('stRate').textContent=rate+'%';
+
+            // 渲染图表
+            renderCharts(s);
+        }
+    }catch(e){console.error(e)}
+}
+
+async function loadResponses() {
+    try {
+        const res = await fetch(`${API}/responses?page=${respPage}&pageSize=15`);
+        const j=await res.json();
+        if(j.code===0){renderResponseTable(j.data.list);renderRespPagination(j.data.pagination);}
+    }catch(e){}
+}
+
+function renderResponseTable(list) {
+    const tb=document.getElementById('responseBody');
+    if(!list||list.length===0){
+        tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--gray-300)">暂无提交记录</td></tr>';
+        return;
+    }
+    tb.innerHTML=list.map((r,i)=>{
+        const t=r.submit_time?new Date(r.submit_time).toLocaleString('zh-CN'):'';
+        const stMap={draft:'草稿',submitted:'已提交'};
+        return `<tr>
+            <td>${(respPage-1)*15+i+1}</td>
+            <td class="name-cell">${escHtml(r.respondent_name||'匿名')}</td>
+            <td>${t}</td>
+            <td><span style="padding:2px 8px;border-radius:12px;font-size:11px;background:${r.status==='submitted'?'#d1fae5':'#fef3c7'};color:${r.status==='submitted'?'#065f46':'#92400e'}">${stMap[r.status]||r.status}</span></td>
+            <td><button class="btn btn-sm btn-outline" onclick="viewDetail(${r.id})">查看</button> <button class="btn btn-sm btn-ghost" style="color:var(--danger)" onclick="deleteResponse(${r.id})">删除</button></td>
+        </tr>`;
+    }).join('');
+}
+
+function renderRespPagination(p) { /* 简化版分页 */ }
+
+async function viewDetail(id) {
+    try{
+        const res=await fetch(`/api/responses/${id}`);
+        const j=await res.json();
+        if(j.code!==0)return;
+        const r=j.data;
+        let html='';
+        (r.answers||[]).forEach(a=>{
+            let val=a.answer_value||'';
+            // 选择题显示label
+            if(['single','multi'].includes(a.question_type)){
+                const opts=this.safeParse?JSON.parse(a.options||'[]'):[];
+                if(a.question_type==='multi'){
+                    val=val.split(',').map(v=>opts.find(o=>o.value===v)?.label||v).join('; ');
+                }else{
+                    val=opts.find(o=>o.value===val)?.label||val;
+                }
+            }
+            html+=`<div class="detail-row"><div class="detail-q">${escHtml(a.question_title)}</div><div class="detail-a">${escHtml(val)}</div></div>`;
+        });
+        document.getElementById('detailBody').innerHTML=html||'<p style="text-align:center;color:var(--gray-400)">无答案</p>';
+        document.getElementById('detailModal').classList.add('show');
+    }catch(e){}
+}
+function hideDetail(){document.getElementById('detailModal').classList.remove('show');}
+
+async function deleteResponse(id){
+    if(!confirm('确定删除此条提交？'))return;
+    try{
+        const res=await fetch(`/api/responses/${id}`,{method:'DELETE'});
+        const j=await res.json();
+        if(j.code===0){showToast('已删除','success');loadResponses();loadStats();}
+    }catch(e){showToast('删除失败','error')}
+}
+
+// ===== 图表渲染 =====
+function renderCharts(stats) {
+    const area=document.getElementById('chartArea');
+    const optStats=(stats.optionStats)||[];
+
+    if(!optStats.length){
+        area.innerHTML='<div class="empty-state">暂无可视化的选择题数据</div>';
+        return;
+    }
+
+    // 按题目分组
+    const grouped={};
+    optStats.forEach(o=>{
+        if(!grouped[o.question_id])grouped[o.question_id]={title:o.question_title,options:[],values:[]};
+        const g=grouped[o.question_id];
+        const opts=JSON.parse(o.options||'[]');
+        const label=opts.find(x=>x.value===o.answer_value)?.label||o.answer_value;
+        g.options.push(label);g.values.push(o.cnt);
+    });
+
+    let html='';
+    Object.values(grouped).forEach(g=>{
+        const maxV=Math.max(...g.values,1);
+        html+=`<div class="chart-section"><div class="chart-title">${escHtml(g.title)}</div>
+        <div class="bar-chart"><div class="bar-axis">${[...Array(5)].map((_,i)=>
+           `<span>${Math.round(maxV*(4-i)/4)}</span>`).reverse().join('')}</div>
+        ${g.options.map((label,i)=>`<div class="bar-col" title="${label}: ${g.values[i]}票">
+           <div class="bar-value">${g.values[i]}</div>
+           <div class="bar-fill" style="height:${(g.values[i]/maxV)*120}px;background:hsl(${220+(i*25)%360},70%,55%)"></div>
+           <span class="bar-label">${escHtml(label)}</span></div>`).join('')}</div></div>`;
+    });
+    area.innerHTML=html;
+}
+
+// ===== Tab 切换 =====
+function switchTab(tab,btn){
+    currentTab=tab;
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    if(btn)btn.classList.add('active');
+    document.getElementById('tabResponses').style.display=tab==='responses'?'block':'none';
+    document.getElementById('tabCharts').style.display=tab==='charts'?'block':'none';
+}
+
+// ===== 导出 =====
+async function exportData(format='csv'){window.open(`${API}/export?format=${format}`,'_blank');}
+
+function showToast(msg,type=''){
+    const el=document.createElement('div');el.className=`toast toast-${type}`;el.textContent=msg;
+    document.body.appendChild(el);setTimeout(()=>el.remove(),2500);
+}
+function escHtml(s){if(!s)return '';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function escAttr(s){return(s||'').replace(/"/g,'&quot;')}
+</script>
+</body>
+</html>

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>问卷调查 - StarMeet</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: -apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif; background:#f5f5f5; color:#333; -webkit-font-smoothing:antialiased; }
+    
+    /* 顶部 */
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: linear-gradient(135deg,#667eea,#764ba2); color: white;
+      padding: 16px 16px 20px; text-align: center;
+      box-shadow: 0 2px 12px rgba(102,126,234,0.3);
+    }
+    .header h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .header p { font-size: 12px; opacity: 0.85; }
+
+    /* 进度条 */
+    .progress-bar { display:flex; align-items:center; gap:8px; padding:10px 16px; background:white; border-bottom:1px solid #eee; }
+    .progress-track { flex:1; height:6px; background:#eee; border-radius:3px; overflow:hidden; }
+    .progress-fill { height:100%; background:linear-gradient(90deg,#667eea,#764ba2); border-radius:3px; transition:width 0.35s ease; width:0%; }
+    .progress-text { font-size:12px; color:#888; min-width:48px; text-align:right; white-space:nowrap; }
+
+    /* 表单区域 */
+    .form-area { padding:16px; max-width:600px; margin:0 auto; padding-bottom:80px; }
+
+    /* 题目卡片 */
+    .q-card { 
+      background:white; border-radius:12px; padding:16px; margin-bottom:12px;
+      box-shadow:0 1px 4px rgba(0,0,0,0.06); transition:transform 0.15s;
+    }
+    .q-card.active { box-shadow:0 4px 16px rgba(102,126,234,0.15); border-left:3px solid #667eea; }
+    .q-title { font-size:15px; font-weight:600; margin-bottom:10px; line-height:1.5; }
+    .q-required { color:#e74c3c; margin-right:2px; }
+    .q-desc { font-size:12px; color:#999; margin-bottom:10px; }
+
+    /* 选项 */
+    .options { display:flex; flex-direction:column; gap:8px; }
+    .option-item {
+      display:flex; align-items:center; gap:10px; padding:11px 14px;
+      border:1.5px solid #e8e8e8; border-radius:9px; cursor:pointer;
+      transition:all 0.18s; font-size:14px; user-select:none;
+    }
+    .option-item:active { transform:scale(0.98); }
+    .option-item.selected { border-color:#667eea; background:#f6f3ff; }
+    .option-radio { width:19px; height:19px; border:2px solid #ccc; border-radius:50%; flex-shrink:0; position:relative; transition:border-color 0.18s; }
+    .option-item.selected .option-radio { border-color:#667eea; }
+    .option-item.selected .option-radio::after { content:''; position:absolute; top:3px;left:3px;width:9px;height:9px;background:#667eea;border-radius:50%; }
+    .option-check { width:19px; height:19px; border:2px solid #ccc; border-radius:4px; flex-shrink:0; position:relative; transition:border-color 0.18s; }
+    .option-item.selected .option-check { border-color:#667eea; background:#667eea; }
+    .option-item.selected .option-check::after { content:'✓'; position:absolute; top:-2px;left:3px;color:white;font-size:13px;font-weight:bold; }
+
+    /* 文本输入 */
+    .text-input {
+      width:100%; padding:11px 14px; border:1.5px solid #e8e8e8; border-radius:9px;
+      font-size:14px; outline:none; transition:border-color 0.18s; font-family:inherit;
+    }
+    .text-input:focus { border-color:#667eea; box-shadow:0 0 0 3px rgba(102,126,234,0.1); }
+    textarea.text-input { resize:vertical; min-height:80px; }
+
+    /* 图片上传 */
+    .img-upload {
+      border:2px dashed #ccc; border-radius:10px; padding:24px; text-align:center;
+      cursor:pointer; transition:all 0.18s; color:#999; font-size:14px;
+    }
+    .img-upload:hover { border-color:#667eea; color:#667eea; background:#fafbff; }
+    .img-preview { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+    .img-preview img { width:72px;height:72px; object-fit:cover; border-radius:8px; border:1px solid #eee; }
+
+    /* 评分 */
+    .rating-stars { display:flex; gap:4px; cursor:pointer; }
+    .star { font-size:28px; color:#ddd; transition:color 0.1s,color 0.1s; }
+    .star.filled { color:#ffb400; }
+
+    /* 底部提交栏 */
+    .submit-bar {
+      position:fixed; bottom:0; left:0; right:0;
+      background:white; padding:12px 16px; z-index:100;
+      box-shadow:0 -2px 12px rgba(0,0,0,0.08);
+      display:flex; gap:10px; align-items:center;
+    }
+    .btn-submit {
+      flex:1; padding:13px; border:none; border-radius:10px;
+      background:linear-gradient(135deg,#667eea,#764ba2); color:white;
+      font-size:16px; font-weight:700; cursor:pointer; letter-spacing:2px;
+      transition:opacity 0.2s,transform 0.1s;
+    }
+    .btn-submit:active { transform:scale(0.98); opacity:0.9; }
+    .btn-submit:disabled { background:#ccc; cursor:not-allowed; }
+
+    /* 密码输入弹窗 */
+    .pwd-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:999;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .pwd-box {
+      background:white; border-radius:14px; padding:28px 24px; width:85%; max-width:340px; text-align:center;
+    }
+    .pwd-box h3 { margin-bottom:16px; font-size:17px; }
+    .pwd-input {
+      width:100%; padding:12px; border:2px solid #ddd; border-radius:8px;
+      font-size:16px; text-align:center; margin-bottom:16px; outline:none;
+    }
+    .pwd-input:focus { border-color:#667eea; }
+
+    /* 信息收集区 */
+    .info-collect { background:#fffbe6; border:1px solid #ffe58f; border-radius:10px; padding:14px; margin-bottom:12px; }
+    .info-collect label { display:block; font-size:13px; color:#666; margin-bottom:4px; }
+    .info-collect input { width:100%; padding:9px 12px; border:1px solid #d9d9d9; border-radius:6px; font-size:14px; outline:none; }
+    .info-collect input:focus { border-color:#faad14; }
+
+    /* 加载/错误状态 */
+    .state-view { text-align:center; padding:60px 20px; }
+    .state-view .icon { font-size:48px; margin-bottom:12px; }
+    .state-view p { color:#999; font-size:14px; }
+    .spinner { display:inline-block;width:32px;height:32px;border:3px solid #eee;border-top-color:#667eea;border-radius:50%;animation:spin 0.7s linear infinite; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    /* 成功页 */
+    .success-page { text-align:center; padding:40px 20px; }
+    .success-page .check-icon { font-size:64px; margin-bottom:16px; animation:bounceIn 0.5s; }
+    @keyframes bounceIn { 0%{transform:scale(0)} 60%{transform:scale(1.15)} 100%{transform:scale(1)} }
+    .success-page h2 { color:#4caf50; margin-bottom:8px; }
+    .success-page p { color:#888; font-size:14px; margin-bottom:24px; }
+    .btn-retry { padding:10px 30px; border:2px solid #667eea; background:none; border-radius:8px; color:#667eea; font-size:14px; cursor:pointer; }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <!-- 加载中 -->
+  <div class="state-view" id="loadingView">
+    <div class="spinner"></div>
+    <p style="margin-top:12px;">正在加载问卷...</p>
+  </div>
+</div>
+
+<script>
+// ====== 从URL获取问卷ID ======
+const urlParams = new URLSearchParams(window.location.search);
+const SURVEY_ID = urlParams.get('id');
+const API_BASE = '/h5/api/survey';
+
+if (!SURVEY_ID) {
+  document.getElementById('app').innerHTML = `
+    <div class="state-view"><div class="icon">📋</div><p>缺少问卷ID参数<br><small>请通过正确链接访问此页面</small></p></div>`;
+}
+
+let surveyData = null;
+let questions = [];
+let answers = {}; // { questionId: answerValue }
+
+// ====== 初始化 ======
+async function init() {
+  if (!SURVEY_ID) return;
+
+  try {
+    // 记录浏览
+    fetch(`${API_BASE}/${SURVEY_ID}/view`).catch(()=>{});
+
+    const res = await fetch(`${API_BASE}/${SURVEY_ID}`);
+    const json = await res.json();
+
+    if (!json.success) {
+      showError(json.message || '加载失败');
+      return;
+    }
+
+    surveyData = json.data.survey;
+    questions = json.data.questions || [];
+
+    // 如果有密码，显示密码输入
+    if (surveyData.password) {
+      showPasswordInput();
+    } else {
+      renderSurvey();
+    }
+  } catch(e) {
+    console.error(e);
+    showError('网络错误，请检查连接后重试');
+  }
+}
+
+function showPasswordInput() {
+  document.getElementById('app').innerHTML = `
+    <div class="pwd-overlay" id="pwdOverlay">
+      <div class="pwd-box">
+        <h3>🔒 该问卷需要访问密码</h3>
+        <input type="password" id="pwdInput" class="pwd-input" placeholder="请输入访问密码" onkeydown="if(event.key==='Enter')verifyPassword()">
+        <button onclick="verifyPassword()" style="width:100%;padding:12px;border:none;background:#667eea;color:white;border-radius:8px;font-size:15px;cursor:pointer;">确认进入</button>
+        <p id="pwdError" style="color:#e74c3c;margin-top:10px;display:none;font-size:13px;"></p>
+      </div>
+    </div>`;
+}
+
+function verifyPassword() {
+  const pwd = document.getElementById('pwdInput').value;
+  if (pwd === surveyData.password) {
+    renderSurvey();
+  } else {
+    const errEl = document.getElementById('pwdError');
+    errEl.textContent = '❌ 密码不正确';
+    errEl.style.display = 'block';
+    document.getElementById('pwdInput').value = '';
+    document.getElementById('pwdInput').focus();
+  }
+}
+
+// ====== 渲染问卷 ======
+function renderSurvey() {
+  let html = '';
+
+  // 顶部
+  html += `<div class="header"><h1>${escHtml(surveyData.title)}</h1>`;
+  if (surveyData.description) html += `<p>${escHtml(surveyData.description)}</p>`;
+  html += `</div>`;
+
+  // 进度条
+  html += `<div class="progress-bar"><div class="progress-track"><div class="progress-fill" id="progressFill"></div></div><span class="progress-text" id="progressText">0/${questions.length}</span></div>`;
+
+  // 表单
+  html += '<div class="form-area" id="formArea">';
+
+  // 信息收集（姓名、手机号）
+  if (surveyData.collectName || surveyData.collectPhone) {
+    html += '<div class="info-collect">';
+    if (surveyData.collectName) {
+      html += '<label>您的姓名' + (surveyData.collectName !== false ? ' *' : '') + '</label>';
+      html += '<input id="submitterName" placeholder="请输入姓名" oninput="updateProgress()">';
+    }
+    if (surveyData.collectPhone) {
+      html += '<label>您的联系方式' + (surveyData.collectPhone ? ' *' : '') + '</label>';
+      html += '<input id="submitterPhone" type="tel" placeholder="请输入手机号或微信" oninput="updateProgress()">';
+    }
+    html += '</div>';
+  }
+
+  // 题目
+  questions.forEach((q, i) => {
+    html += renderQuestion(q, i);
+  });
+
+  html += '</div>';
+
+  // 提交栏
+  html += `<div class="submit-bar"><button class="btn-submit" id="btnSubmit" onclick="handleSubmit()">提 交 问 卷</button></div>`;
+
+  document.getElementById('app').innerHTML = html;
+  updateProgress();
+}
+
+function renderQuestion(q, index) {
+  const reqMark = q.required ? '<span class="q-required">*</span>' : '';
+  
+  switch (q.type) {
+    case 'radio':
+      return `<div class="q-card" data-qid="${q.id}">
+        <div class="q-title">${reqMark}${escHtml(q.title)}</div>
+        <div class="options">${(q.options||[]).map((opt,i)=>`
+          <div class="option-item" onclick="selectRadio(${q.id},'${escAttr(opt)}',this)">
+            <div class="option-radio"></div><span>${escHtml(opt)}</span>
+          </div>`).join('')}</div></div>`;
+
+    case 'checkbox':
+      return `<div class="q-card" data-qid="${q.id}">
+        <div class="q-title">${reqMark}${escHtml(q.title)}</div>
+        <div class="options">${(q.options||[]).map(opt=>`
+          <div class="option-item" onclick="toggleCheck(${q.id},'${escAttr(opt)}',this)">
+            <div class="option-check"></div><span>${escHtml(opt)}</span>
+          </div>`).join('')}</div></div>`;
+
+    case 'text':
+    case 'number':
+    case 'date':
+      const inputType = q.type === 'number' ? 'number' : q.type === 'date' ? 'date' : 'text';
+      const placeholder = q.extraSettings?.placeholder || `请输入${q.title}`;
+      return `<div class="q-card" data-qid="${q.id}">
+        <div class="q-title">${reqMark}${escHtml(q.title)}</div>
+        <input type="${inputType}" class="text-input" value="" placeholder="${placeholder}"
+               onchange="setAnswer(${q.id},this.value)" oninput="updateProgress()"></div>`;
+
+    case 'textarea':
+      return `<div class="q-card" data-qid="${q.id}">
+        <div class="q-title">${reqMark}${escHtml(q.title)}</div>
+        <textarea class="text-input" rows="4" placeholder="请详细描述..."
+                  onchange="setAnswer(${q.id},this.value)" oninput="updateProgress()"></textarea></div>`;
+
+    case 'image':
+      return `<div class="q-card" data-qid="${q.id}">
+        <div class="q-title">${reqMark}${escHtml(q.title)}</div>
+        <div class="img-upload" onclick="handleImageUpload(${q.id})">📷 点击上传图片</div>
+        <div class="img-preview" id="imgPreview_${q.id}"></div></div>`;
+
+    case 'rating':
+      const maxScore = q.extraSettings?.maxScore || 5;
+      let starsHtml = '';
+      for (let s = 1; s <= maxScore; s++) {
+        starsHtml += `<span class="star" id="star_${q.id}_${s}" onclick="setRating(${q.id},${s})">★</span>`;
+      }
+      return `<div class="q-card" data-qid="${q.id}">
+        <div class="q-title">${reqMark}${escHtml(q.title)}</div>
+        <div class="rating-stars">${starsHtml}</div>
+        <div style="font-size:12px;color:#999;margin-top:4px;" id="ratingLabel_${q.id}">${q.extraSettings?.scoreLabel||''}</div></div>`;
+
+    default:
+      return `<div class="q-card"><div class="q-title">${reqMark}${escHtml(q.title)}</div></div>`;
+  }
+}
+
+// ====== 交互处理 ======
+function selectRadio(qId, val, el) {
+  setAnswer(qId, val);
+  el.parentElement.querySelectorAll('.option-item').forEach(item => item.classList.remove('selected'));
+  el.classList.add('selected');
+  updateProgress();
+}
+
+function toggleCheck(qId, val, el) {
+  if (!answers[qId]) answers[qId] = [];
+  else if (!Array.isArray(answers[qId])) answers[qId] = [answers[qId]];
+  
+  const idx = answers[qId].indexOf(val);
+  if (idx >= 0) answers[qId].splice(idx, 1);
+  else answers[qId].push(val);
+
+  el.classList.toggle('selected');
+  updateProgress();
+}
+
+function setAnswer(qId, val) {
+  answers[qId] = val;
+  updateProgress();
+}
+
+function setRating(qId, score) {
+  answers[qId] = score;
+  for (let i = 1; i <= 10; i++) {
+    const starEl = document.getElementById(`star_${qId}_${i}`);
+    if (starEl) starEl.classList.toggle('filled', i <= score);
+  }
+  updateProgress();
+}
+
+function handleImageUpload(qId) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.multiple = true;
+  input.onchange = function(e) {
+    const files = e.target.files;
+    if (!files.length) return;
+    
+    if (!answers[qId]) answers[qId] = [];
+    
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        const preview = document.getElementById(`imgPreview_${qId}`);
+        if (preview) {
+          const img = document.createElement('img');
+          img.src = ev.target.result;
+          preview.appendChild(img);
+        }
+        answers[qId].push({ filename: file.name, dataUrl: ev.target.result });
+      };
+      reader.readAsDataURL(file);
+    });
+    updateProgress();
+  };
+  input.click();
+}
+
+// ====== 进度更新 ======
+function updateProgress() {
+  const total = questions.length;
+  let answered = 0;
+  questions.forEach(q => {
+    const val = answers[q.id];
+    if (val !== undefined && val !== null && val !== '' && 
+        !(Array.isArray(val) && val.length === 0)) answered++;
+  });
+
+  const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
+  const fill = document.getElementById('progressFill');
+  const txt = document.getElementById('progressText');
+  if (fill) fill.style.width = pct + '%';
+  if (txt) txt.textContent = `${answered}/${total}`;
+}
+
+// ====== 提交处理 ======
+async function handleSubmit() {
+  // 必填校验
+  for (const q of questions) {
+    if (!q.required) continue;
+    const val = answers[q.id];
+    const isEmpty = val === undefined || val === null || val === '' || 
+                     (Array.isArray(val) && val.length === 0);
+    if (isEmpty) {
+      alert(`请完成第 ${q.sortOrder + 1} 题：${q.title}`);
+      const card = document.querySelector(`[data-qid="${q.id}"]`);
+      if (card) { card.scrollIntoView({behavior:'smooth', block:'center'}); card.classList.add('active'); setTimeout(()=>card.classList.remove('active'),1500); }
+      return;
+    }
+  }
+
+  const btn = document.getElementById('btnSubmit');
+  btn.disabled = true;
+  btn.textContent = '提交中...';
+
+  // 组装答案数据
+  const answerList = questions.map(q => ({
+    questionId: q.id,
+    answer: answers[q.id]
+  }));
+
+  const submitterName = document.getElementById('submitterName')?.value?.trim() || '';
+  const submitterPhone = document.getElementById('submitterPhone')?.value?.trim() || '';
+
+  try {
+    const res = await fetch(`${API_BASE}/${SURVEY_ID}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: submitterName,
+        phone: submitterPhone,
+        password: surveyData.password || '',
+        answers: answerList
+      })
+    });
+
+    const json = await res.json();
+
+    if (json.success) {
+      showSuccess();
+    } else {
+      alert(json.message || '提交失败，请重试');
+      btn.disabled = false;
+      btn.textContent = '提 交 问 卷';
+    }
+  } catch(e) {
+    alert('网络错误，请检查网络后重试');
+    btn.disabled = false;
+    btn.textContent = '提 交 问 卷';
+  }
+}
+
+function showSuccess() {
+  document.querySelector('.submit-bar')?.remove();
+  document.getElementById('formArea').innerHTML = `
+    <div class="success-page">
+      <div class="check-icon">✅</div>
+      <h2>提交成功！</h2>
+      <p>感谢您参与本次调查<br>我们会认真阅读每一条反馈 🙏</p>
+      <button class="btn-retry" onclick="location.reload()">再填一份</button>
+    </div>`;
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function showError(msg) {
+  document.getElementById('app').innerHTML = `
+    <div class="state-view"><div class="icon">😕</div><p>${escHtml(msg)}</p>
+    <br><button class="btn-retry" onclick="location.reload()">重新加载</button></div>`;
+}
+
+// ====== 工具函数 ======
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(str) {
+  return String(str).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+}
+
+// 启动
+init();
+</script>
+</body>
+</html>

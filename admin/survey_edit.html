@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>编辑问卷 - StarMeet Admin</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root {
+    --primary:#4f46e5;--primary-light:#818cf8;--primary-bg:#eef2ff;
+    --success:#10b981;--warning:#f59e0b;--danger:#ef4444;
+    --gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;--gray-300:#d1d5db;
+    --gray-400:#9ca3af;--gray-500:#6b7280;--gray-600:#4b5563;--gray-700:#374151;
+    --gray-800:#1f2937;--white:#fff;
+}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--gray-50);color:var(--gray-800)}
+
+/* 顶栏 */
+.topbar{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.back-btn{text-decoration:none;color:var(--gray-600);font-size:14px;display:flex;align-items:center;gap:4px}
+.back-btn:hover{color:var(--primary)}
+.topbar-title{font-size:16px;font-weight:600}
+.topbar-right{display:flex;align-items:center;gap:8px}
+
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;text-decoration:none;line-height:1.4}
+.btn-primary{background:var(--primary);color:var(--white)}.btn-primary:hover{background:#4338ca}
+.btn-success{background:var(--success);color:var(--white)}.btn-success:hover{background:#059669}
+.btn-outline{border:1px solid var(--gray-300);background:var(--white);color:var(--gray-700)}.btn-outline:hover{border-color:var(--primary);color:var(--primary)}
+.btn-danger{background:var(--danger);color:var(--white)}.btn-sm{padding:5px 11px;font-size:12px;border-radius:6px}
+.btn-ghost{background:transparent;color:var(--gray-500)}; .btn-ghost:hover{background:var(--gray-100);color:var(--gray-700)}
+
+/* 主布局 */
+.layout{display:flex;max-width:1300px;margin:0 auto;min-height:calc(100vh - 52px)}
+
+/* 左侧：题型选择 */
+.type-panel{width:220px;background:var(--white);border-right:1px solid var(--gray-200);padding:16px 12px;flex-shrink:0;position:sticky;top:52px;height:calc(100vh - 52px);overflow-y:auto}
+.panel-label{font-size:12px;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:10px;padding-left:4px}
+.type-grid{display:flex;flex-direction:column;gap:6px}
+.type-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid var(--gray-200);background:var(--white);cursor:pointer;font-size:13px;color:var(--gray-700);transition:all .15s}
+.type-btn:hover{border-color:var(--primary-light);background:var(--primary-bg);color:var(--primary)}
+.type-icon{width:32px;height:32px;border-radius:6px;background:var(--gray-50);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.type-name{font-weight:500}
+.type-desc{font-size:11px;color:var(--gray-400)}
+
+/* 中间：编辑区 */
+.editor-area{flex:1;padding:24px;min-width:0;max-width:720px}
+
+/* 问卷设置卡片 */
+.survey-settings{background:var(--white);border-radius:12px;padding:20px;margin-bottom:20px;border:1px solid var(--gray-200)}
+.settings-row{display:flex;gap:12px}.settings-row .field{flex:1}
+.field label{display:block;font-size:12px;font-weight:500;color:var(--gray-600);margin-bottom:4px}
+.field input,.field textarea{width:100%;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;font-size:14px;outline:none;transition:border-color .2s}
+.field input:focus,.field textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.08)}
+.field textarea{resize:vertical;min-height:60px}
+
+/* 题目列表 */
+.questions-container{display:flex;flex-direction:column;gap:12px}
+
+/* 单个题目卡片 */
+.question-card{background:var(--white);border:2px solid var(--gray-200);border-radius:12px;padding:18px;position:relative;transition:all .2s}
+.question-card:hover{border-color:var(--gray-300);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.question-card.active{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.08)}
+.question-card.dragging{opacity:.5;border-style:dashed;border-color:var(--primary-light)}
+
+.q-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.q-type-tag{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--primary-bg);color:var(--primary);font-weight:500}
+.q-actions{display:flex;gap:4px}
+.q-number{position:absolute;left:-28px;top:18px;width:22px;height:22px;border-radius:50%;background:var(--primary);color:var(--white);font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:600}
+
+.q-title-input{width:100%;border:none;font-size:15px;font-weight:600;color:var(--gray-900);outline:none;background:transparent;padding:4px 0;border-bottom:2px solid transparent;transition:border-color .2s}
+.q-title-input:focus{border-bottom-color:var(--primary-light)}
+.q-title-input::placeholder{color:var(--gray-300);font-weight:400}
+
+.q-desc{margin-top:4px}
+.q-desc input{width:100%;border:none;font-size:12px;color:var(--gray-500);outline:none;background:transparent;padding:2px 0}
+.q-desc input::placeholder{color:var(--gray-300)}
+
+/* 必填标记 */
+.required-toggle{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--gray-500);cursor:pointer;margin-top:6px;padding:3px 8px;border-radius:6px;transition:background .15s}
+.required-toggle:hover{background:var(--gray-50)}
+.required-toggle input[type=checkbox]{accent-color:var(--danger)}
+
+/* 选项编辑区（选择题）*/
+.options-editor{margin-top:10px;padding-left:4px}
+.option-item{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.option-drag{cursor:grab;color:var(--gray-300);font-size:12px;padding:4px}
+.option-radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--gray-300);flex-shrink:0;position:relative}
+.option-check{width:16px;height:16px;border-radius:3px;border:2px solid var(--gray-300);flex-shrink:0}
+.option-input{flex:1;border:1px solid transparent;border-radius:6px;padding:6px 10px;font-size:13px;outline:none;transition:border-color .15s}
+.option-input:focus{border-color:var(--primary-light);background:var(--primary-bg)}
+.option-delete{opacity:0;color:var(--gray-300);cursor:pointer;font-size:16px;padding:2px 4px;border-radius:4px;transition:all .15s}
+.option-item:hover .option-delete{opacity:1}
+.option-delete:hover{color:var(--danger)}
+.add-option-btn{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--primary);cursor:pointer;padding:4px 10px;border-radius:6px;transition:background .15s;margin-top:4px}
+.add-option-btn:hover{background:var(--primary-bg)}
+
+/* 文本/数字题特殊设置 */
+.text-settings,.number-settings{margin-top:8px;display:flex;gap:10px;flex-wrap:wrap}
+.setting-chip{display:flex;align-items:center;gap:4px;padding:4px 10px;border:1px solid var(--gray-200);border-radius:20px;font-size:12px;color:var(--gray-600)}
+.setting-chip input{border:none;width:50px;font-size:12px;outline:none;text-align:center;background:transparent}
+.setting-chip span{color:var(--gray-400)}
+
+/* 删除题目按钮 */
+.delete-q-btn{position:absolute;right:12px;bottom:12px;opacity:0;font-size:12px;color:var(--danger);cursor:pointer;padding:4px 8px;border-radius:6px;transition:all .15s}
+.question-card:hover .delete-q-btn{opacity:1}
+.delete-q-btn:hover{background:#fef2f2}
+
+/* 右侧预览 */
+.preview-panel{width:340px;background:var(--white);border-left:1px solid var(--gray-200);padding:20px;flex-shrink:0;position:sticky;top:52px;height:calc(100vh-52px);overflow-y:auto}
+.preview-header{font-size:13px;font-weight:600;color:var(--gray-500);margin-bottom:16px;display:flex;align-items:center;gap:6px}
+.phone-frame{border:1px solid var(--gray-200);border-radius:20px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.phone-statusbar{background:var(--gray-800);height:24px;display:flex;align-items:center;justify-content:center}
+.phone-statusbar span{color:var(--gray-400);font-size:11px}
+.phone-content{min-height:400px;padding:16px;background:var(--gray-50)}
+.preview-welcome{background:linear-gradient(135deg,var(--primary),#7c3aed);color:var(--white);padding:30px 20px;text-align:center;border-radius:12px;margin-bottom:16px}
+.preview-welcome h3{font-size:18px;margin-bottom:8px}
+.preview-welcome p{font-size:13px;opacity:.85}
+.preview-question{background:var(--white);border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid var(--gray-200)}
+.pq-title{font-size:13px;font-weight:500;margin-bottom:8px}
+.pq-options{display:flex;flex-direction:column;gap:6px}
+.pq-option{padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;font-size:13px;color:var(--gray-600);cursor:pointer;transition:all .15s}
+.pq-option:hover{border-color:var(--primary);background:var(--primary-bg)}
+.pq-text-input{width:100%;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;font-size:13px;outline:none}
+.pq-required::after{content:' *';color:var(--danger)}
+
+/* Toast */
+.toast{position:fixed;top:16px;right:16px;background:var(--gray-800);color:var(--white);padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;animation:toastIn .25s;box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.toast-success{background:var(--success)}.toast-error{background:var(--danger)}
+@keyframes toastIn{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* 空状态 */
+.empty-editor{text-align:center;padding:60px 20px;color:var(--gray-300)}
+.empty-editor .icon{font-size:48px;margin-bottom:12px}
+
+@media(max-width:1024px){
+    .type-panel{display:none}
+    .preview-panel{display:none}
+    .editor-area{max-width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- 顶部栏 -->
+<div class="topbar">
+    <div class="topbar-left">
+        <a class="back-btn" href="/admin/survey_list.html">← 返回</a>
+        <span class="topbar-title" id="pageTitle">加载中...</span>
+    </div>
+    <div class="topbar-right">
+        <button class="btn btn-outline btn-sm" onclick="previewSurvey()">👁️ 预览</button>
+        <button class="btn btn-success" onclick="saveAll()">💾 保存</button>
+        <a href="/admin/survey_list.html" class="btn btn-primary">完成 ✅</a>
+    </div>
+</div>
+
+<div class="layout">
+    <!-- 左侧：题型面板 -->
+    <aside class="type-panel" id="typePanel">
+        <div class="panel-label">添加题目</div>
+        <div class="type-grid">
+            <div class="type-btn" onclick="addQuestion('single')"><div class="type-icon">⭕</div><div><div class="type-name">单选题</div><div class="type-desc">只能选一个</div></div></div>
+            <div class="type-btn" onclick="addQuestion('multi')"><div class="type-icon">☑️</div><div><div class="type-name">多选题</div><div class="type-desc">可多选</div></div></div>
+            <div class="type-btn" onclick="addQuestion('text')"><div class="type-icon">📝</div><div><div class="type-name">文本填空</div><div class="type-desc">单行文字</div></div></div>
+            <div class="type-btn" onclick="addQuestion('textarea')"><div class="type-icon">📄</div><div><div class="type-name">多行文本</div><div class="type-desc">大段文字</div></div></div>
+            <div class="type-btn" onclick="addQuestion('number')"><div class="type-icon">🔢</div><div><div class="type-name">数字</div><div class="type-desc">年龄、身高等</div></div></div>
+            <div class="type-btn" onclick="addQuestion('date')"><div class="type-icon">📅</div><div><div class="type-name">日期</div><div class="type-desc">出生日期等</div></div></div>
+            <div class="type-btn" onclick="addQuestion('image')"><div class="type-icon">🖼️</div><div><div class="type-name">图片上传</div><div class="type-desc">照片、证件照</div></div></div>
+            <div class="type-btn" onclick="addQuestion('score')"><div class="type-icon">⭐</div><div><div class="type-name">评分</div><div class="type-desc">1-5星评价</div></div></div>
+        </div>
+    </aside>
+
+    <!-- 中间：编辑区 -->
+    <main class="editor-area" id="editorArea">
+        <!-- 问卷设置 -->
+        <div class="survey-settings" id="surveySettings">
+            <div class="settings-row">
+                <div class="field"><label>问卷标题</label><input type="text" id="surveyTitle" placeholder="输入问卷标题"></div>
+                <div class="field" style="max-width:120px"><label>类型</label><input type="text" id="surveyType" readonly style="background:var(--gray-50)" placeholder="-"></div>
+            </div>
+            <div class="settings-row" style="margin-top:10px">
+                <div class="field"><label>欢迎语</label><textarea id="welcomeText" rows="1" placeholder="用户打开问卷时显示的文字"></textarea></div>
+                <div class="field"><label>结束语</label><textarea id="endText" rows="1" placeholder="提交后显示的文字"></textarea></div>
+            </div>
+        </div>
+
+        <!-- 题目区域 -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <span style="font-size:13px;font-weight:600;color:var(--gray-500)">题目列表（拖动排序或点击左侧题型添加）</span>
+            <span style="font-size:12px;color:var(--gray-400)" id="questionCount">0 道题</span>
+        </div>
+        <div class="questions-container" id="questionsContainer">
+            <div class="empty-editor" id="emptyState">
+                <div class="icon">📝</div>
+                <div style="font-size:15px;color:var(--gray-400)">还没有题目</div>
+                <div style="font-size:13px;margin-top:4px">从左侧选择题型开始创建</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 右侧：手机预览 -->
+    <aside class="preview-panel">
+        <div class="preview-header">📱 实时预览</div>
+        <div class="phone-frame">
+            <div class="phone-statusbar"><span>9:41</span></div>
+            <div class="phone-content" id="previewContent">
+                <div class="preview-welcome">
+                    <h3 id="pwTitle">问卷标题</h3>
+                    <p id="pwDesc">欢迎填写</p>
+                </div>
+                <div id="previewQuestions"></div>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<script>
+// ===== 全局状态 =====
+let surveyId = new URLSearchParams(location.search).get('id');
+let questions = [];   // [{id?, question_type, title, description, is_required, options:[], settings:{}, sort_order}]
+let questionIdCounter = Date.now(); // 用于临时ID
+
+const TYPE_NAMES = { single:'单选题', multi:'多选题', text:'文本', textarea:'多行文本',
+                     number:'数字', date:'日期', image:'图片上传', score:'评分' };
+
+// ===== 加载问卷数据 =====
+async function loadSurvey() {
+    if (!surveyId) { showToast('缺少问卷ID','error'); return; }
+    try {
+        const res = await fetch(`/api/surveys/${surveyId}`);
+        const j = await res.json();
+        if (j.code !== 0) throw new Error(j.message);
+        const s = j.data;
+
+        document.getElementById('surveyTitle').value = s.title || '';
+        document.getElementById('surveyType').value = s.type==='male'?'男性客户':s.type==='female'?'女性用户':'自定义';
+        document.getElementById('welcomeText').value = s.welcome_text || '';
+        document.getElementById('endText').value = s.end_text || '';
+        document.getElementById('pageTitle').textContent = '编辑：' + (s.title||'未命名');
+        document.title = '编辑 - ' + (s.title||'问卷');
+
+        questions = (s.questions || []).map((q,i) => ({...q, sort_order:i}));
+        renderQuestions();
+        renderPreview();
+    } catch(e) {
+        console.error(e);
+        showToast('加载失败：'+e.message,'error');
+    }
+}
+
+// ===== 渲染题目列表 =====
+function renderQuestions() {
+    const container = document.getElementById('questionsContainer');
+    const empty = document.getElementById('emptyState');
+    document.getElementById('questionCount').textContent = questions.length + ' 道题';
+
+    if (questions.length === 0) {
+        container.innerHTML = '';
+        container.appendChild(empty);
+        empty.style.display='block';
+        return;
+    }
+
+    container.innerHTML = questions.map((q, i) => renderQuestionCard(q, i)).join('');
+    bindQuestionEvents();
+}
+
+function renderQuestionCard(q, idx) {
+    let bodyHtml = '';
+
+    // 根据题型渲染不同的编辑UI
+    if (['single','multi'].includes(q.question_type)) {
+        const opts = q.options || [];
+        bodyHtml = `
+        <div class="options-editor">
+            ${opts.map((o,oi)=>`
+            <div class="option-item" data-idx="${oi}">
+                <span class="option-drag">⠿</span>
+                <span class="${q.question_type==='single'?'option-radio':'option-check'}"></span>
+                <input class="option-input" value="${escHtml(o.label||o.value||'')}" placeholder="选项${oi+1}">
+                <span class="option-delete" onclick="removeOption(${idx},${oi})">×</span>
+            </div>`).join('')}
+            <div class="add-option-btn" onclick="addOption(${idx})">+ 添加选项</div>
+        </div>`;
+    } else if (['text','textarea'].includes(q.question_type)) {
+        const st = q.settings || {};
+        bodyHtml = `<div class="text-settings">
+            <div class="setting-chip">占位符<input type="text" value="${escAttr(st.placeholder||'')}"></div>
+            <div class="setting-chip">最大字数<input type="number" value="${st.maxLength||500}" style="width:55px"></div>
+        </div>`;
+    } else if (q.question_type === 'number') {
+        const st = q.settings || {};
+        bodyHtml = `<div class="number-settings">
+            <div class="setting-chip">最小值<input type="number" value="${st.min||''}"></div>
+            <div class="setting-chip">最大值<input type="number" value="${st.max||''}"></div>
+            <div class="setting-chip">单位<input value="${escAttr(st.unit||'')}" style="width:45px"></div>
+        </div>`;
+    } else if (q.question_type === 'image') {
+        const st = q.settings || {};
+        bodyHtml = `<div class="text-settings">
+            <div class="setting-chip">最多上传<span>${st.maxCount||9}</span>张</div>
+            <div class="setting-chip">单张上限<span>${st.maxSizeMB||5}</span>MB</div>
+        </div>`;
+    } else if (q.question_type === 'score') {
+        bodyHtml = `<div class="text-settings">
+            <div class="setting-chip">最高分<span>${(q.settings||{}).maxScore||5}</span>分</div>
+        </div>`;
+    }
+
+    return `
+    <div class="question-card" data-idx="${idx}" data-id="${q.id||''}" draggable="true">
+        <span class="q-number">${idx+1}</span>
+        <div class="q-header">
+            <span class="q-type-tag">${TYPE_NAMES[q.question_type]||q.question_type}</span>
+            <div class="q-actions">
+                ${q.question_type!=='single'&&q.question_type!=='multi'?`<button class="btn btn-sm btn-ghost" onclick="changeType(${idx})">切换题型</button>`:''}
+                <button class="btn btn-sm btn-ghost" onclick="duplicateQuestion(${idx})">复制</button>
+            </div>
+        </div>
+        <input class="q-title-input" value="${escHtml(q.title||'')}" placeholder="请输入题目标题"
+               oninput="updateTitle(${idx},this.value)">
+        <div class="q-desc"><input value="${escHtml(q.description||'')}" placeholder="题目说明（可选）"
+               oninput="updateDesc(${idx},this.value)"></div>
+        <label class="required-toggle">
+            <input type="checkbox" ${q.is_required?'checked':''} onchange="updateRequired(${idx},this.checked)">
+            此题为必填
+        </label>
+        ${bodyHtml}
+        <span class="delete-q-btn" onclick="deleteQuestion(${idx})">🗑️ 删除此题</span>
+    </div>`;
+}
+
+// ===== 绑定事件 =====
+function bindQuestionEvents() {
+    // 选项值变化监听
+    document.querySelectorAll('.option-input').forEach(input => {
+        input.addEventListener('change', function() {
+            const item = this.closest('.option-item');
+            const qIdx = parseInt(item.closest('.question-card').dataset.idx);
+            const oIdx = parseInt(item.dataset.idx);
+            if (questions[qIdx] && questions[qIdx].options && questions[qIdx].options[oIdx]) {
+                questions[qIdx].options[oIdx].label = this.value;
+                questions[qIdx].options[oIdx].value = this.value.toLowerCase().replace(/\s+/g,'_');
+                renderPreview();
+            }
+        });
+    });
+
+    // 拖拽排序
+    const cards = document.querySelectorAll('.question-card[draggable]');
+    cards.forEach(card => {
+        card.addEventListener('dragstart', e => {
+            e.dataTransfer.setData('text/plain', card.dataset.idx);
+            card.classList.add('dragging');
+        });
+        card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        card.addEventListener('dragover', e => { e.preventDefault(); });
+        card.addEventListener('drop', e => {
+            e.preventDefault();
+            const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+            const toIdx = parseInt(e.target.closest('.question-card')?.dataset.idx ?? fromIdx);
+            if (fromIdx !== toIdx && !isNaN(fromIdx) && !isNaN(toIdx)) {
+                const [moved] = questions.splice(fromIdx, 1);
+                questions.splice(toIdx, 0, moved);
+                renderQuestions();
+                renderPreview();
+            }
+        });
+    });
+}
+
+// ===== 添加题目 =====
+function addQuestion(type) {
+    const defaultOpts = type==='single'||type==='multi'
+        ? [{label:'选项A',value:'a'},{label:'选项B',value:'b'},{label:'选项C',value:'c'}]
+        : [];
+
+    questions.push({
+        question_type: type,
+        title: '',
+        description: '',
+        is_required: true,
+        options: defaultOpts,
+        settings: {},
+        sort_order: questions.length,
+        tempId: ++questionIdCounter
+    });
+
+    // 隐藏空状态
+    document.getElementById('emptyState').style.display='none';
+    renderQuestions();
+    renderPreview();
+
+    // 滚动到新题目并聚焦标题输入
+    setTimeout(() => {
+        const cards = document.querySelectorAll('.question-card');
+        const last = cards[cards.length-1];
+        if (last) {
+            last.scrollIntoView({behavior:'smooth',block:'center'});
+            last.querySelector('.q-title-input')?.focus();
+        }
+    }, 100);
+}
+
+// ===== 更新操作 =====
+function updateTitle(idx, val){ if(questions[idx]) questions[idx].title=val; renderPreview(); }
+function updateDesc(idx, val){ if(questions[idx]) questions[idx].description=val; }
+function updateRequired(idx, val){ if(questions[idx]) questions[idx].is_required=val?1:0; }
+
+function addOption(qIdx) {
+    if(!questions[qIdx].options) questions[qIdx].options=[];
+    const opts = questions[qIdx].options;
+    const letter = String.fromCharCode(65+opts.length); // A,B,C...
+    opts.push({label:`选项${letter}`,value:letter.toLowerCase()});
+    renderQuestions(); renderPreview();
+}
+
+function removeOption(qIdx, oIdx){
+    questions[qIdx]?.options?.splice(oIdx,1);
+    renderQuestions(); renderPreview();
+}
+
+function deleteQuestion(idx) {
+    if(confirm('确定删除此题目？')){ questions.splice(idx,1); renderQuestions(); renderPreview(); }
+}
+
+function duplicateQuestion(idx) {
+    const copy = JSON.parse(JSON.stringify(questions[idx]));
+    delete copy.id; copy.tempId = ++questionIdCounter;
+    questions.splice(idx+1,0,copy);
+    renderQuestions(); renderPreview();
+}
+
+function changeType(idx) {
+    const types = ['single','multi','text','textarea','number','date','image','score'];
+    const current = questions[idx].question_type;
+    const next = types[(types.indexOf(current)+1)%types.length];
+    if(confirm(`将「${TYPE_NAMES[current]}」改为「${TYPE_NAMES[next]}」？\n注意：选项数据可能丢失`)){
+        questions[idx].question_type = next;
+        if(['single','multi'].includes(next)&&!questions[idx].options?.length)
+            questions[idx].options=[{label:'选项A',value:'a'},{label:'选项B',value:'b'}];
+        renderQuestions(); renderPreview();
+    }
+}
+
+// ===== 保存所有 =====
+async function saveAll() {
+    const title = document.getElementById('surveyTitle').value.trim();
+    if (!title) return showToast('请填写问卷标题','error');
+
+    // 收集题目数据（从DOM）
+    collectDataFromDOM();
+
+    // 先更新问卷基本信息
+    await fetch(`/api/surveys/${surveyId}`, {
+        method:'PUT', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+            title, description:'',
+            welcome_text:document.getElementById('welcomeText').value.trim(),
+            end_text:document.getElementById('endText').value.trim()
+        })
+    });
+
+    // 批量保存题目
+    const cleanQuestions = questions.map(q => ({
+        question_type: q.question_type,
+        title: q.title || '(未命名)',
+        description: q.description || '',
+        is_required: q.is_required !== undefined ? q.is_required : 1,
+        sort_order: q.sort_order || 0,
+        options: q.options || [],
+        settings: q.settings || {}
+    }));
+
+    const res = await fetch(`/api/surveys/${surveyId}/questions`, {
+        method:'PUT', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ questions: cleanQuestions })
+    });
+    const j = await res.json();
+
+    if (j.code===0) {
+        showToast('保存成功！','success');
+        // 重新加载以获取服务端ID
+        loadSurvey();
+    } else {
+        showToast('保存失败：'+j.message,'error');
+    }
+}
+
+// 从DOM收集最新数据
+function collectDataFromDOM(){
+    document.querySelectorAll('.question-card').forEach((card, idx) => {
+        if (!questions[idx]) return;
+        // 标题和描述已在oninput中更新
+
+        // 选项值
+        if (['single','multi'].includes(questions[idx].question_type)) {
+            const optionInputs = card.querySelectorAll('.option-input');
+            questions[idx].options = Array.from(optionInputs).map(inp => ({
+                label: inp.value,
+                value: inp.value.toLowerCase().replace(/\s+/g,'_')
+            }));
+        }
+    });
+}
+
+// ===== 预览 =====
+function renderPreview() {
+    document.getElementById('pwTitle').textContent =
+        document.getElementById('surveyTitle').value || '问卷标题';
+    document.getElementById('pwDesc').textContent =
+        document.getElementById('welcomeText').value || '欢迎填写这份问卷';
+
+    const pqContainer = document.getElementById('previewQuestions');
+    pqContainer.innerHTML = questions.filter(q=>q.title).map((q,i)=>{
+        let inner = '';
+        if (['single','multi'].includes(q.question_type)) {
+            const opts = q.options||[];
+            inner = '<div class="pq-options">'+opts.map(o =>
+                `<div class="pq-option">${escHtml(o.label)}</div>`
+            ).join('')+'</div>';
+        } else if (['text','number'].includes(q.question_type)) {
+            const ph = (q.settings||{}).placeholder || `请输入${q.title}`;
+            inner = `<input class="pq-text-input" placeholder="${escAttr(ph)}" disabled>`;
+        } else if (q.question_type === 'textarea') {
+            inner = `<textarea class="pq-text-input" rows="3" placeholder="请输入..." disabled style="resize:none"></textarea>`;
+        } else if (q.question_type === 'image') {
+            inner = `<div style="padding:20px;text-align:center;color:var(--gray-400);font-size:13px;border:2px dashed var(--gray-200);border-radius:8px;">📷 点击上传图片</div>`;
+        } else if (q.question_type === 'score') {
+            inner = `<div style="display:flex;gap:4px;font-size:20px;color:var(--warning);padding:4px 0">⭐⭐⭐⭐⭐</div>`;
+        } else {
+            inner = `<input class="pq-text-input" placeholder="请输入" disabled>`;
+        }
+        return `<div class="preview-question${q.is_required?' pq-required':''}">
+            <div class="pq-title">${i+1}. ${escHtml(q.title)}</div>
+            ${inner}
+        </div>`;
+    }).join('');
+}
+
+function previewSurvey() {
+    // 可以在新窗口打开H5预览
+    window.open(`/admin/survey_preview.html?id=${surveyId}`, '_blank');
+}
+
+// ===== 工具函数 =====
+function escHtml(s){if(!s)return '';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function escAttr(s){return(s||'').replace(/"/g,'&quot;').replace(/'/g,"&#39;");}
+function showToast(msg,type='') {
+    const el=document.createElement('div');el.className=`toast toast-${type}`;el.textContent=msg;
+    document.body.appendChild(el);setTimeout(()=>el.remove(),2500);
+}
+
+// ===== 初始化 =====
+loadSurvey();
+</script>
+</body>
+</html>

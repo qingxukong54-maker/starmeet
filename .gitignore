@@ -1,0 +1,29 @@
+# 数据文件（不提交到 Git）
+data/
+
+# Node.js
+node_modules/
+package-lock.json
+npm-debug.log
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*.zip
+*.tar.gz
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 上传文件（运行时生成）
+uploads/
+
+# 临时/备份文件
+*.bak
+07be95f098b3b6ba3af1f4df8c12f079.txt

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>圈子管理 - StarMeet后台</title>
+  <link rel="stylesheet" href="/admin/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .post-list { margin-top: 20px; }
+    .post-item {
+      background: #fff;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .post-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .post-author {
+      font-weight: 600;
+      color: #333;
+    }
+    .post-time {
+      font-size: 12px;
+      color: #999;
+    }
+    .post-content {
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+    .post-stats {
+      display: flex;
+      gap: 16px;
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 12px;
+    }
+    .post-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-delete {
+      padding: 6px 16px;
+      background: #f44336;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .btn-delete:hover {
+      background: #d32f2f;
+    }
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .filter-bar input {
+      padding: 8px 12px;
+      border: 1px solid #e8e8e8;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .filter-bar button {
+      padding: 8px 16px;
+      background: #ff5a5f;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <div class="sidebar" id="sidebar">
+      <div class="logo" onclick="location.href='/admin/'">💕 StarMeet 后台</div>
+      <nav>
+        <a class="menu-item" href="/admin/"><i>📊</i>数据看板</a>
+        <a class="menu-item" href="/admin/" data-page="users"><i>👥</i>会员管理</a>
+        <a class="menu-item" href="/admin/circle_manager.html"><i>💬</i>圈子管理</a>
+      </nav>
+    </div>
+    <div class="main">
+      <div class="topbar">
+        <div class="page-title">圈子管理</div>
+        <div class="user-info" id="userInfo"></div>
+      </div>
+      <div class="content">
+        <div class="filter-bar">
+          <input type="text" id="searchInput" placeholder="搜索用户邮箱或内容...">
+          <button onclick="loadPosts()">搜索</button>
+          <button onclick="resetSearch()">重置</button>
+        </div>
+        <div id="postList" class="post-list"></div>
+        <div id="pagination" style="margin-top: 20px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // API请求封装（带管理员认证）
+    const adminToken = localStorage.getItem('zeai_admin_token') || '';
+    async function api(path, opts = {}) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (adminToken) headers['Authorization'] = 'Bearer ' + adminToken;
+      const res = await fetch(path, {
+        method: opts.method || 'GET',
+        headers,
+        body: opts.body ? JSON.stringify(opts.body) : undefined
+      });
+      const data = await res.json();
+      if (data.code === 401) { alert('登录已过期'); location.href = '/admin/'; }
+      return data;
+    }
+
+    let currentPage = 1;
+    const pageSize = 20;
+
+    // 检查登录态
+    (async () => {
+      const res = await api('/api/admin/me');
+      if (res.code !== 0) return location.href = '/admin/';
+      document.getElementById('userInfo').textContent = res.data.email;
+      loadPosts();
+    })();
+
+    async function loadPosts() {
+      const keyword = document.getElementById('searchInput').value;
+      let url = '/api/admin/circle_posts?page=' + currentPage + '&pageSize=' + pageSize;
+      if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
+      
+      const res = await api(url);
+      if (res.code !== 0) return alert('加载失败');
+      
+      const { list, total } = res.data;
+      const container = document.getElementById('postList');
+      
+      if (list.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无帖子</div>';
+      } else {
+        container.innerHTML = list.map(p => `
+          <div class="post-item">
+            <div class="post-header">
+              <div>
+                <div class="post-author">${p.authorName || '未知用户'}</div>
+                <div style="font-size:12px;color:#999;">${p.authorEmail || ''}</div>
+              </div>
+              <div class="post-time">${new Date(p.createdAt).toLocaleString()}</div>
+            </div>
+            <div class="post-content">${p.content}</div>
+            <div class="post-stats">
+              <span><i class="fas fa-heart"></i> ${p.likes || 0} 点赞</span>
+              <span><i class="fas fa-comment"></i> ${p.comments || 0} 评论</span>
+            </div>
+            <div class="post-actions">
+              <button class="btn-delete" onclick="deletePost('${p.id}')">删除</button>
+            </div>
+          </div>
+        `).join('');
+      }
+      
+      // 分页
+      renderPagination(total);
+    }
+
+    function renderPagination(total) {
+      const totalPages = Math.ceil(total / pageSize);
+      let html = '<div style="display:flex;justify-content:center;gap:8px;">';
+      for (let i = 1; i <= totalPages; i++) {
+        html += `<button style="padding:6px 12px;border:1px solid #e8e8e8;background:${i === currentPage ? '#ff5a5f' : '#fff'};color:${i === currentPage ? '#fff' : '#333'};border-radius:4px;cursor:pointer;" onclick="currentPage=${i};loadPosts()">${i}</button>`;
+      }
+      html += '</div>';
+      document.getElementById('pagination').innerHTML = html;
+    }
+
+    async function deletePost(postId) {
+      if (!confirm('确定要删除这条帖子吗？')) return;
+      const res = await api('/api/admin/circle_post', { method: 'DELETE', body: { postId } });
+      if (res.code !== 0) return alert('删除失败');
+      alert('删除成功');
+      loadPosts();
+    }
+
+    function resetSearch() {
+      document.getElementById('searchInput').value = '';
+      currentPage = 1;
+      loadPosts();
+    }
+  </script>
+</body>
+</html>
